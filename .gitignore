@@ -1,0 +1,12 @@
+logs
+target
+.idea
+.settings
+*.iml
+*.log
+.classpath
+.factorypath
+.project
+dbl*.dat
+log
+data

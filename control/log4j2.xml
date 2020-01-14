@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="logPattern">
+            %d{yyyyMMdd-HH:mm:ss,SSS} %-5p [%t] %c{1.} - %m%n
+        </Property>
+        <Property name="logDir" value="${sys:service_log_dir}"/>
+    </Properties>
+
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT" immediateFlush="false">
+            <PatternLayout pattern="${logPattern}" charset="UTF-8"/>
+        </Console>
+        <RollingRandomAccessFile
+                name="file"
+                immediateFlush="false"
+                fileName="${logDir}/app.log"
+                filePattern="${logDir}/app.%d{yyyy-MM-dd}.%i.log">
+            <Policies>
+                <SizeBasedTriggeringPolicy size="256MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="180"/>
+            <PatternLayout pattern="${logPattern}" charset="UTF-8"/>
+        </RollingRandomAccessFile>
+
+    </Appenders>
+    <Loggers>
+        <AsyncLogger name="sdn" level="info" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </AsyncLogger>
+
+        <AsyncLogger name="sumscope" level="info" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </AsyncLogger>
+
+        <AsyncLogger name="ats" level="info" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </AsyncLogger>
+
+        <AsyncLogger name="youxianqi" level="info" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </AsyncLogger>
+
+        <Root level="info">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </Root>
+    </Loggers>
+</Configuration>
