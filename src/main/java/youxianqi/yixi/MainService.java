@@ -7,8 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,10 +48,31 @@ public class MainService {
         server2.put("appId", "cdh.quickfix_S");
         serverList.add(server2);
 
+        return ResponseEntity.ok(success(serverList));
+    }
+
+    private Map<String, Object> success(Object data) {
         Map<String, Object> ret = new HashMap<>();
         ret.put("status", "0");
-        ret.put("data", serverList);
+        ret.put("data", data);
+        return ret;
+    }
 
-        return ResponseEntity.ok(ret);
+    @PostMapping(value = "/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> payload) {
+        String username="", passwordMd5="";
+        for(String key : payload.keySet()) {
+            if (key.equals("username")) {
+                username = (String) payload.get(key);
+            }
+            if (key.equals("password")) {
+                passwordMd5 = (String) payload.get(key);
+            }
+        }
+        if (username.equals("小鱼说")
+                && passwordMd5.equals(DigestUtils.md5Digest("123456".getBytes(StandardCharsets.UTF_8)))) {
+            return ResponseEntity.ok(success("ok"));
+        }
+        return ResponseEntity.ok(success("failed"));
     }
 }
