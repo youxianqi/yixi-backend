@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration PUBLIC
+        "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<!-- mvn mybatis-generator:generate -->
+<generatorConfiguration>
+    <context id="context1">
+        <jdbcConnection driverClass="com.mysql.jdbc.Driver" connectionURL="jdbc:mysql://172.16.87.11:3306/albert" userId="sumscope" password="sumscope" />
+        <javaModelGenerator targetPackage="youxianqi.yixi.generated.model" targetProject="src/main/java" />
+        <sqlMapGenerator targetPackage="." targetProject="src/main/resources/generated" />
+        <javaClientGenerator targetPackage="youxianqi.yixi.generated.mapper" targetProject="src/main/java" type="XMLMAPPER" />
+        <table tableName="main_user" domainObjectName="UserEntity" enableCountByExample="false" enableUpdateByExample="false" enableDeleteByExample="false" enableSelectByExample="false" selectByExampleQueryId="false" />
+        <table tableName="main_resource" domainObjectName="ResourceEntity" enableCountByExample="false" enableUpdateByExample="false" enableDeleteByExample="false" enableSelectByExample="false" selectByExampleQueryId="false" />
+        <table tableName="main_tag_dict" domainObjectName="TagEntity" enableCountByExample="false" enableUpdateByExample="false" enableDeleteByExample="false" enableSelectByExample="false" selectByExampleQueryId="false" />
+    </context>
+</generatorConfiguration>

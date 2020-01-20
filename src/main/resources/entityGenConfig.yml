@@ -1,0 +1,13 @@
+jdbcSettings:
+  url: "jdbc:mysql://172.16.87.11:3306/albert"
+  username: "sumscope"
+  password: "sumscope"
+  driverClassName: "com.mysql.jdbc.Driver"
+
+tableScanMode: RuleBased
+tableScanRules:
+  - tableNames: ["main_user"]
+
+packageName: "youxianqi.yixi.generated"
+
+# https://github.com/smartnews/jpa-entity-generator

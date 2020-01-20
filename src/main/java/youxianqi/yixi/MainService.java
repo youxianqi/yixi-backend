@@ -1,17 +1,25 @@
 package youxianqi.yixi;
 
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
+import youxianqi.yixi.generated.CustomEntity;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +32,26 @@ import java.util.Map;
 public class MainService {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    @Autowired
+    QueryRepo queryRepo;
+
     public void init() {
     }
 
     public void start() {
+        List<CustomEntity> t = queryRepo.findList1(1);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object row : t) {
+            Object[] rowArray = (Object[]) row;
+            Map<String, Object> mapArr = new HashMap<String, Object>();
+            mapArr.put("id", rowArray[0]);
+            mapArr.put("title", rowArray[1]);
+            mapArr.put("count", rowArray[2]);
+            mapArr.put("flag", rowArray[3]);
+            result.add(mapArr);
+        }
+        logger.info(result.toString());
     }
 
     @Scheduled(cron = "0 10 0 * * ?")
@@ -69,10 +93,20 @@ public class MainService {
                 passwordMd5 = (String) payload.get(key);
             }
         }
-        if (username.equals("小鱼说")
-                && passwordMd5.equals(DigestUtils.md5Digest("123456".getBytes(StandardCharsets.UTF_8)))) {
-            return ResponseEntity.ok(success("ok"));
+        List<Pair<String, String>> users = new ArrayList<>();
+        users.add(Pair.of("小鱼说", "12345678"));
+
+        for(Pair<String, String> pair : users) {
+            if (username.equals(pair.getLeft())
+                    && passwordMd5.equals(DigestUtils.md5Hex(pair.getRight()))) {
+                return ResponseEntity.ok(success("ok"));
+            }
         }
         return ResponseEntity.ok(success("failed"));
+    }
+
+    @PostMapping(value = "/changePwd")
+    public ResponseEntity<Map<String, Object>> changePwd(@RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(success("ok"));
     }
 }
