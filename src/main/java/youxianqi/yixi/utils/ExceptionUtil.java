@@ -1,4 +1,4 @@
-package youxianqi.yixi;
+package youxianqi.yixi.utils;
 
 import java.io.IOException;
 import java.io.PrintWriter;

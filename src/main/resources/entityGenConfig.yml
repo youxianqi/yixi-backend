@@ -4,10 +4,10 @@ jdbcSettings:
   password: "sumscope"
   driverClassName: "com.mysql.jdbc.Driver"
 
-tableScanMode: RuleBased
-tableScanRules:
-  - tableNames: ["main_user"]
+#tableScanMode: RuleBased
+#tableScanRules:
+#  - tableNames: ["main_user"]
 
-packageName: "youxianqi.yixi.generated"
+packageName: "youxianqi.yixi.model"
 
 # https://github.com/smartnews/jpa-entity-generator
