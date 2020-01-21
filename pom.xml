@@ -257,6 +257,7 @@
         <!--config in entityGenConfig.yml-->
         <groupId>com.smartnews</groupId>
         <artifactId>maven-jpa-entity-generator-plugin</artifactId>
+        <version>0.99.8</version>
         <dependencies>
           <dependency>
             <groupId>mysql</groupId>

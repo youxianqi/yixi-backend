@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import youxianqi.yixi.model.*;
 import youxianqi.yixi.reqres.RequestResourceList;
+import youxianqi.yixi.reqres.RequestUserAction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,13 +30,18 @@ public class DataService {
     @Autowired
     TagDictRepo tagDictRepo;
 
+    @Autowired
+    ResourceUserRepo resourceUserRepo;
+
+    @Autowired
+    ResourceUserTagRepo resourceUserTagRepo;
+
     public void init() {
     }
 
     public void start() {
-
-        List<CustomUser> t = resourceRepo.getCustomUserList("1,2,3");
-        logger.info(t.toString());
+        MainResourceUserTagR r = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(5,1, 403);
+        logger.info(r.toString());
     }
 
     @Scheduled(cron = "0 10 0 * * ?")
@@ -107,5 +113,102 @@ public class DataService {
     public List<CustomResource> getResourceList(RequestResourceList params) {
         return resourceRepo.getResourceList(params.getKtreeIds(), params.getResourceType(),
                 params.getResourceStatus(), params.getResourceAccessType());
+    }
+    public List<CustomResource> getResourceListByOwner(RequestResourceList params) {
+        return resourceRepo.getResourceListByOwner(params.getKtreeIds(), params.getResourceType(),
+                params.getResourceStatus(), params.getResourceAccessType(), params.getOwnerUserId());
+    }
+    public List<CustomResource> getResourceListByTags(RequestResourceList params) {
+        return resourceRepo.getResourceListByTags(params.getKtreeIds(), params.getResourceType(),
+                params.getResourceStatus(), params.getResourceAccessType(), params.getTagIds());
+    }
+    public List<CustomResource> getResourceListByFav(RequestResourceList params) {
+        return resourceRepo.getResourceListByFav(params.getKtreeIds(), params.getResourceType(),
+                params.getResourceStatus(), params.getResourceAccessType(), params.getFavUserId());
+    }
+    /*
+ActionType,1,buy,购买 -- todo
+ActionType,2,view,观看
+ActionType,3,tag,打标签
+ActionType,4,like,赞
+ActionType,5,fav,收藏
+ActionType,6,comment,评论
+     */
+    public void doUserAction(RequestUserAction params) {
+        if (params.isAddNotDelete()) {
+            if (params.getActionType() == 2
+                    || params.getActionType() == 4
+                    || params.getActionType() == 5
+                    || params.getActionType() == 6) {
+                MainResourceUserR existed = resourceUserRepo.findOneByResourceIdAndUserId(params.getResourceId(), params.getUserId());
+                if (existed == null) {
+                    existed = new MainResourceUserR();
+                    existed.setResourceId(params.getResourceId());
+                    existed.setUserId(params.getUserId());
+                }
+                if (params.getActionType() == 2){
+                    existed.setViews(existed.getViews() + 1);
+                }
+                if (params.getActionType() == 4){
+                    existed.setLikes(existed.getLikes() + 1);
+                }
+                if (params.getActionType() == 5){
+                    existed.setHasFaved(1);
+                }
+                if (params.getActionType() == 6){
+                    existed.setComment(params.getComment());
+                    existed.setCommentToUserid(params.getCommentToUserId());
+                }
+                resourceUserRepo.save(existed);
+                return;
+            }
+            if (params.getActionType() == 3) {
+                MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
+                        params.getResourceId(),params.getUserId(),params.getTagId());
+                if (existed == null) {
+                    existed = new MainResourceUserTagR();
+                    existed.setResourceId(params.getResourceId());
+                    existed.setUserId(params.getUserId());
+                    existed.setTagId(params.getTagId());
+                    resourceUserTagRepo.save(existed);
+                    return;
+                }
+            }
+        }
+        else {
+            if (params.getActionType() == 2
+                    || params.getActionType() == 4
+                    || params.getActionType() == 5
+                    || params.getActionType() == 6) {
+                MainResourceUserR existed = resourceUserRepo.findOneByResourceIdAndUserId(params.getResourceId(), params.getUserId());
+                if (existed == null) {
+                    existed = new MainResourceUserR();
+                    existed.setResourceId(params.getResourceId());
+                    existed.setUserId(params.getUserId());
+                }
+                if (params.getActionType() == 2){
+                    if (existed.getViews() > 0) existed.setViews(existed.getViews() - 1);
+                }
+                if (params.getActionType() == 4){
+                    if (existed.getLikes() > 0) existed.setViews(existed.getLikes() - 1);
+                }
+                if (params.getActionType() == 5){
+                    existed.setHasFaved(0);
+                }
+                if (params.getActionType() == 6){
+                    existed.setComment("");
+                    existed.setCommentToUserid(0);
+                }
+                resourceUserRepo.save(existed);
+                return;
+            }
+            if (params.getActionType() == 3) {
+                MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
+                        params.getResourceId(),params.getUserId(),params.getTagId());
+                if (existed != null){
+                    resourceUserTagRepo.delete(existed);
+                }
+            }
+        }
     }
 }

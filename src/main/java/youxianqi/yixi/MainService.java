@@ -9,7 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import youxianqi.yixi.reqres.RequestResourceList;
+import youxianqi.yixi.reqres.RequestUserAction;
 import youxianqi.yixi.utils.ExceptionUtil;
+import youxianqi.yixi.utils.JsonUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +21,7 @@ import java.util.Map;
 @RequestMapping("/api")
 @Component
 public class MainService {
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    static private Logger logger = LoggerFactory.getLogger(MainService.class);
 
     @Autowired
     DataService dataService;
@@ -42,6 +44,7 @@ public class MainService {
         return  response("ok");
     }
     static private Map<String, Object> response(Object data) {
+        logger.info("response...{}", JsonUtil.objectToString(data, ""));
         Map<String, Object> ret = new HashMap<>();
         ret.put("status", 200);
         ret.put("data", data);
@@ -55,6 +58,7 @@ public class MainService {
     @PostMapping(value = "/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> payload) {
         try {
+            logger.info("login...request: {}", payload.toString());
             if (dataService.verifyUser(get(payload, "username"), get(payload, "password"))) {
                 return ResponseEntity.ok(success());
             } else {
@@ -62,7 +66,6 @@ public class MainService {
             }
         }
         catch (Exception e) {
-            logger.error("login...req: {}", payload.toString());
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
         }
@@ -71,13 +74,14 @@ public class MainService {
     @PostMapping(value = "/changePwd")
     public ResponseEntity<Map<String, Object>> changePwd(@RequestBody Map<String, Object> payload) {
         try {
+            logger.info("changePwd...request: {}", payload.toString());
             if (!dataService.verifyUser(get(payload, "username"), get(payload, "oldPassword"))) {
                 return ResponseEntity.ok(response("用户名或密码错误"));
             }
             dataService.changePwd(get(payload, "username"), get(payload, "password"));
             return ResponseEntity.ok(success());
         } catch (Exception e) {
-            logger.error("changePwd...req: {}", payload.toString());
+
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
         }
@@ -86,9 +90,9 @@ public class MainService {
     @PostMapping(value = "/getTags")
     public ResponseEntity<Map<String, Object>> getTags() {
         try {
+            logger.info("getTags...");
             return ResponseEntity.ok(response(dataService.getTags()));
         } catch (Exception e) {
-            logger.error("getTags...");
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
         }
@@ -97,9 +101,68 @@ public class MainService {
     @PostMapping(value = "/getResourceList")
     public ResponseEntity<Map<String, Object>> getResourceList(@RequestBody RequestResourceList payload) {
         try {
+            logger.info("getResourceList...request: {}", payload.toString());
             return ResponseEntity.ok(response(dataService.getResourceList(payload)));
         } catch (Exception e) {
-            logger.error("getResourceList...req: {}", payload.toString());
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/getResourceListByOwner")
+    public ResponseEntity<Map<String, Object>> getResourceListByOwner(@RequestBody RequestResourceList payload) {
+        try {
+            logger.info("getResourceListByOwner...request: {}", payload.toString());
+            return ResponseEntity.ok(response(dataService.getResourceListByOwner(payload)));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/getResourceListByTags")
+    public ResponseEntity<Map<String, Object>> getResourceListByTags(@RequestBody RequestResourceList payload) {
+        try {
+            logger.info("getResourceListByTags...request: {}", payload.toString());
+            return ResponseEntity.ok(response(dataService.getResourceListByTags(payload)));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/getResourceListByFav")
+    public ResponseEntity<Map<String, Object>> getResourceListByFav(@RequestBody RequestResourceList payload) {
+        try {
+            logger.info("getResourceListByFav...request: {}", payload.toString());
+            return ResponseEntity.ok(response(dataService.getResourceListByFav(payload)));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/addOneAction")
+    public ResponseEntity<Map<String, Object>> addOneAction(@RequestBody RequestUserAction payload) {
+        try {
+            logger.info("addOneAction...request: {}", payload.toString());
+            payload.setAddNotDelete(true);
+            dataService.doUserAction(payload);
+            return ResponseEntity.ok(success());
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/deleteOneAction")
+    public ResponseEntity<Map<String, Object>> deleteOneAction(@RequestBody RequestUserAction payload) {
+        try {
+            logger.info("deleteOneAction...request: {}", payload.toString());
+            payload.setAddNotDelete(false);
+            dataService.doUserAction(payload);
+            return ResponseEntity.ok(success());
+        } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
         }
