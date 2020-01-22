@@ -12,7 +12,8 @@ public class RequestResourceList {
     private Integer orderByDirection;
     private Integer offset;
     private Integer limit;
-    private Integer ownerUserId;
     private String tagIds;
+    private Integer ownerUserId;
     private Integer favUserId;
+    private String searchKey;
 }

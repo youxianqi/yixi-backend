@@ -125,7 +125,7 @@ public class SQL {
         else {
             sqlTemplate = GET_RES_LIST;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
-            return em.createNativeQuery(sql)
+            return em.createNativeQuery(sql, CustomResource.class)
                     .setParameter("p_ktree_ids", params.getKtreeIds())
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())

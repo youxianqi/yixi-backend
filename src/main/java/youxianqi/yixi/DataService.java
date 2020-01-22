@@ -51,7 +51,6 @@ public class DataService {
     public void start() {
 //        MainResourceUserTagR r = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(5,1, 403);
 //        logger.info(r.toString());
-
 //        RequestResourceList req = new RequestResourceList();
 //        req.setKtreeIds("47");
 //        req.setResourceType(4);

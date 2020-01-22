@@ -38,16 +38,25 @@ public class MainService {
 
     @PostMapping(value = "/serverList")
     public ResponseEntity<Map<String, Object>> serverList() {
-        return ResponseEntity.ok(response(dataService.serverList()));
+        return ResponseEntity.ok(success(dataService.serverList()));
     }
 
     static private Map<String, Object> success() {
-        return  response("ok");
+        return  response("ok", true);
     }
-    static private Map<String, Object> response(Object data) {
+
+    static private Map<String, Object> success(Object data) {
+        return response(data, true);
+    }
+
+    static private Map<String, Object> failed(Object data) {
+        return response(data, false);
+    }
+
+    static private Map<String, Object> response(Object data, boolean success) {
         logger.info("response...{}", JsonUtil.objectToString(data, ""));
         Map<String, Object> ret = new HashMap<>();
-        ret.put("status", 200);
+        ret.put("status", success ? 200 : 201);
         ret.put("data", data);
         return ret;
     }
@@ -63,12 +72,12 @@ public class MainService {
             if (dataService.verifyUser(get(payload, "username"), get(payload, "password"))) {
                 return ResponseEntity.ok(success());
             } else {
-                return ResponseEntity.ok(response("用户名或密码错误"));
+                return ResponseEntity.ok(failed("用户名或密码错误"));
             }
         }
         catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -77,14 +86,14 @@ public class MainService {
         try {
             logger.info("changePwd...request: {}", payload.toString());
             if (!dataService.verifyUser(get(payload, "username"), get(payload, "oldPassword"))) {
-                return ResponseEntity.ok(response("用户名或密码错误"));
+                return ResponseEntity.ok(failed("用户名或密码错误"));
             }
             dataService.changePwd(get(payload, "username"), get(payload, "password"));
             return ResponseEntity.ok(success());
         } catch (Exception e) {
 
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -92,10 +101,10 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getTags() {
         try {
             logger.info("getTags...");
-            return ResponseEntity.ok(response(dataService.getTags()));
+            return ResponseEntity.ok(success(dataService.getTags()));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -103,43 +112,10 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getResourceList(@RequestBody RequestResourceList payload) {
         try {
             logger.info("queryResourceList...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
+            return ResponseEntity.ok(success(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
-        }
-    }
-
-    @PostMapping(value = "/getResourceListByOwner")
-    public ResponseEntity<Map<String, Object>> getResourceListByOwner(@RequestBody RequestResourceList payload) {
-        try {
-            logger.info("getResourceListByOwner...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
-        } catch (Exception e) {
-            logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
-        }
-    }
-
-    @PostMapping(value = "/getResourceListByTags")
-    public ResponseEntity<Map<String, Object>> getResourceListByTags(@RequestBody RequestResourceList payload) {
-        try {
-            logger.info("getResourceListByTags...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
-        } catch (Exception e) {
-            logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
-        }
-    }
-
-    @PostMapping(value = "/getResourceListByFav")
-    public ResponseEntity<Map<String, Object>> getResourceListByFav(@RequestBody RequestResourceList payload) {
-        try {
-            logger.info("getResourceListByFav...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
-        } catch (Exception e) {
-            logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -152,7 +128,7 @@ public class MainService {
             return ResponseEntity.ok(success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -165,7 +141,7 @@ public class MainService {
             return ResponseEntity.ok(success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -175,12 +151,12 @@ public class MainService {
             logger.info("addTag...request: {}", payload.toString());
             int existedId = dataService.doAddTag(payload);
             if (existedId > 0) {
-                return ResponseEntity.ok(response("已经存在该标签, id为" + existedId));
+                return ResponseEntity.ok(failed("已经存在该标签, id为" + existedId));
             }
             return ResponseEntity.ok(success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 
@@ -192,7 +168,7 @@ public class MainService {
             return ResponseEntity.ok(success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(response(e.getMessage()));
+            return ResponseEntity.ok(failed(e.getMessage()));
         }
     }
 }
