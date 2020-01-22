@@ -7,7 +7,7 @@ public class RequestUserAction {
     private boolean isAddNotDelete;
     private int resourceId;
     private int userId;
-    private int actionType;
+    private byte actionType;
     private int tagId;
     private String comment;
     private int commentToUserId;

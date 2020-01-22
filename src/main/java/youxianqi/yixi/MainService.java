@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
 import youxianqi.yixi.utils.ExceptionUtil;
@@ -98,10 +99,10 @@ public class MainService {
         }
     }
 
-    @PostMapping(value = "/getResourceList")
+    @PostMapping(value = "/queryResourceList")
     public ResponseEntity<Map<String, Object>> getResourceList(@RequestBody RequestResourceList payload) {
         try {
-            logger.info("getResourceList...request: {}", payload.toString());
+            logger.info("queryResourceList...request: {}", payload.toString());
             return ResponseEntity.ok(response(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
@@ -113,7 +114,7 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getResourceListByOwner(@RequestBody RequestResourceList payload) {
         try {
             logger.info("getResourceListByOwner...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceListByOwner(payload)));
+            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
@@ -124,7 +125,7 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getResourceListByTags(@RequestBody RequestResourceList payload) {
         try {
             logger.info("getResourceListByTags...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceListByTags(payload)));
+            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
@@ -135,7 +136,7 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getResourceListByFav(@RequestBody RequestResourceList payload) {
         try {
             logger.info("getResourceListByFav...request: {}", payload.toString());
-            return ResponseEntity.ok(response(dataService.getResourceListByFav(payload)));
+            return ResponseEntity.ok(response(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(response(e.getMessage()));
@@ -161,6 +162,33 @@ public class MainService {
             logger.info("deleteOneAction...request: {}", payload.toString());
             payload.setAddNotDelete(false);
             dataService.doUserAction(payload);
+            return ResponseEntity.ok(success());
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/addTag")
+    public ResponseEntity<Map<String, Object>> addTag(@RequestBody RequestAddTag payload) {
+        try {
+            logger.info("addTag...request: {}", payload.toString());
+            int existedId = dataService.doAddTag(payload);
+            if (existedId > 0) {
+                return ResponseEntity.ok(response("已经存在该标签, id为" + existedId));
+            }
+            return ResponseEntity.ok(success());
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(response(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/deleteTag")
+    public ResponseEntity<Map<String, Object>> deleteTag(@RequestBody Map<String, Object> payload) {
+        try {
+            logger.info("deleteTag...request: {}", payload.toString());
+            dataService.doDeleteTag(Integer.parseInt(get(payload, "tagId")));
             return ResponseEntity.ok(success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));

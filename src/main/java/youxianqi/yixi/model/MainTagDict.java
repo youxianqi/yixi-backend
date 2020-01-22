@@ -23,7 +23,7 @@ public class MainTagDict {
    * ResourceType,5,social,社交
    */
   @Column(name = "\"tag_resource_type\"", nullable = false)
-  private Short tagResourceType;
+  private Byte tagResourceType;
   @Column(name = "\"local_update_time\"", nullable = false)
   private Timestamp localUpdateTime;
 }

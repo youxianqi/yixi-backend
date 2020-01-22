@@ -1,15 +1,21 @@
 package youxianqi.yixi;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import youxianqi.yixi.consts.ActionType;
+import youxianqi.yixi.consts.BoolType;
 import youxianqi.yixi.model.*;
+import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
+import youxianqi.yixi.utils.JsonUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,12 +42,23 @@ public class DataService {
     @Autowired
     ResourceUserTagRepo resourceUserTagRepo;
 
+    @Autowired
+    SQL sqlQuery;
+
     public void init() {
     }
 
     public void start() {
-        MainResourceUserTagR r = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(5,1, 403);
-        logger.info(r.toString());
+//        MainResourceUserTagR r = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(5,1, 403);
+//        logger.info(r.toString());
+
+//        RequestResourceList req = new RequestResourceList();
+//        req.setKtreeIds("47");
+//        req.setResourceType(4);
+//        req.setResourceStatus(2);
+//        req.setResourceAccessType(1);
+//        List<CustomResource> r2 = sqlQuery.queryResourceList(req);
+//        logger.info(r2.toString());
     }
 
     @Scheduled(cron = "0 10 0 * * ?")
@@ -97,11 +114,11 @@ public class DataService {
 
     public List<Map<String, Object>> getTags() {
         List<MainTagDict> allTags = tagDictRepo.findAll();
-        Map<Short, List<MainTagDict>> tagsPerResType =
+        Map<Byte, List<MainTagDict>> tagsPerResType =
                 allTags.stream().collect(Collectors.groupingBy(MainTagDict::getTagResourceType));
 
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Short resType : tagsPerResType.keySet()) {
+        for (Byte resType : tagsPerResType.keySet()) {
             Map<String, Object> map = new HashMap<>();
             map.put("resourceType", resType);
             map.put("tags", tagsPerResType.get(resType));
@@ -111,58 +128,80 @@ public class DataService {
     }
 
     public List<CustomResource> getResourceList(RequestResourceList params) {
-        return resourceRepo.getResourceList(params.getKtreeIds(), params.getResourceType(),
-                params.getResourceStatus(), params.getResourceAccessType());
+        return sqlQuery.queryResourceList(params);
     }
-    public List<CustomResource> getResourceListByOwner(RequestResourceList params) {
-        return resourceRepo.getResourceListByOwner(params.getKtreeIds(), params.getResourceType(),
-                params.getResourceStatus(), params.getResourceAccessType(), params.getOwnerUserId());
+
+    private static void increaseTagCount(MainResource resource, int tagId){
+        Map<Integer, Integer> tags = null;
+        int tagCount = 0;
+        if (StringUtils.isEmpty(resource.getTagsJsonD())) {
+            tags = new HashMap<>();
+        }
+        else {
+            tags = JsonUtil.stringToObject(resource.getTagsJsonD(), HashMap.class);
+            if (tags.containsKey(tagId)) {
+                tagCount = tags.get(tagId);
+            }
+        }
+        tags.put(tagId, tagCount + 1);
+        resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
-    public List<CustomResource> getResourceListByTags(RequestResourceList params) {
-        return resourceRepo.getResourceListByTags(params.getKtreeIds(), params.getResourceType(),
-                params.getResourceStatus(), params.getResourceAccessType(), params.getTagIds());
+
+    private static void decreaseTagCount(MainResource resource, int tagId){
+        Map<Integer, Integer> tags = null;
+        if (StringUtils.isEmpty(resource.getTagsJsonD())) {
+            return;
+        }
+        tags = JsonUtil.stringToObject(resource.getTagsJsonD(), HashMap.class);
+        if (!tags.containsKey(tagId)) {
+            return;
+        }
+        int tagCount = tags.get(tagId);
+        if (tagCount > 0) {
+            tags.put(tagId, tagCount - 1);
+        }
+        resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
-    public List<CustomResource> getResourceListByFav(RequestResourceList params) {
-        return resourceRepo.getResourceListByFav(params.getKtreeIds(), params.getResourceType(),
-                params.getResourceStatus(), params.getResourceAccessType(), params.getFavUserId());
-    }
-    /*
-ActionType,1,buy,购买 -- todo
-ActionType,2,view,观看
-ActionType,3,tag,打标签
-ActionType,4,like,赞
-ActionType,5,fav,收藏
-ActionType,6,comment,评论
-     */
+
+    @Transactional
     public void doUserAction(RequestUserAction params) {
+        MainResource resource = resourceRepo.findOne(params.getResourceId());
         if (params.isAddNotDelete()) {
-            if (params.getActionType() == 2
-                    || params.getActionType() == 4
-                    || params.getActionType() == 5
-                    || params.getActionType() == 6) {
+            if (params.getActionType() == ActionType.VIEW.getValue()
+                    || params.getActionType() == ActionType.LIKE.getValue()
+                    || params.getActionType() == ActionType.FAV.getValue()
+                    || params.getActionType() == ActionType.COMMENT.getValue()) {
                 MainResourceUserR existed = resourceUserRepo.findOneByResourceIdAndUserId(params.getResourceId(), params.getUserId());
                 if (existed == null) {
                     existed = new MainResourceUserR();
                     existed.setResourceId(params.getResourceId());
                     existed.setUserId(params.getUserId());
                 }
-                if (params.getActionType() == 2){
+                if (params.getActionType() == ActionType.VIEW.getValue()){
                     existed.setViews(existed.getViews() + 1);
+                    resource.setViewsD(resource.getViewsD() + 1);
                 }
-                if (params.getActionType() == 4){
-                    existed.setLikes(existed.getLikes() + 1);
+                if (params.getActionType() == ActionType.LIKE.getValue()){
+                    if (existed.getHasLiked() == BoolType.FALSE.getValue()) {
+                        resource.setLikesD(resource.getLikesD() + 1);
+                    }
+                    existed.setHasLiked(BoolType.TRUE.getValue());
                 }
-                if (params.getActionType() == 5){
-                    existed.setHasFaved(1);
+                if (params.getActionType() == ActionType.FAV.getValue()){
+                    if (existed.getHasFaved() == BoolType.FALSE.getValue()) {
+                        resource.setFavsD(resource.getFavsD() + 1);
+                    }
+                    existed.setHasFaved(BoolType.TRUE.getValue());
                 }
-                if (params.getActionType() == 6){
+                if (params.getActionType() == ActionType.COMMENT.getValue()){
                     existed.setComment(params.getComment());
                     existed.setCommentToUserid(params.getCommentToUserId());
                 }
                 resourceUserRepo.save(existed);
+                resourceRepo.save(resource);
                 return;
             }
-            if (params.getActionType() == 3) {
+            if (params.getActionType() == ActionType.TAG.getValue()) {
                 MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
                         params.getResourceId(),params.getUserId(),params.getTagId());
                 if (existed == null) {
@@ -171,44 +210,69 @@ ActionType,6,comment,评论
                     existed.setUserId(params.getUserId());
                     existed.setTagId(params.getTagId());
                     resourceUserTagRepo.save(existed);
+                    increaseTagCount(resource, params.getTagId());
+                    resourceRepo.save(resource);
                     return;
                 }
             }
         }
         else {
-            if (params.getActionType() == 2
-                    || params.getActionType() == 4
-                    || params.getActionType() == 5
-                    || params.getActionType() == 6) {
+            if (params.getActionType() == ActionType.VIEW.getValue()
+                    || params.getActionType() == ActionType.LIKE.getValue()
+                    || params.getActionType() == ActionType.FAV.getValue()
+                    || params.getActionType() == ActionType.COMMENT.getValue()) {
                 MainResourceUserR existed = resourceUserRepo.findOneByResourceIdAndUserId(params.getResourceId(), params.getUserId());
                 if (existed == null) {
                     existed = new MainResourceUserR();
                     existed.setResourceId(params.getResourceId());
                     existed.setUserId(params.getUserId());
                 }
-                if (params.getActionType() == 2){
+                if (params.getActionType() == ActionType.VIEW.getValue()){
                     if (existed.getViews() > 0) existed.setViews(existed.getViews() - 1);
+                    if (resource.getViewsD() > 0) resource.setViewsD(resource.getViewsD() - 1);
                 }
-                if (params.getActionType() == 4){
-                    if (existed.getLikes() > 0) existed.setViews(existed.getLikes() - 1);
+                if (params.getActionType() == ActionType.LIKE.getValue()){
+                    existed.setHasLiked(BoolType.FALSE.getValue());
+                    if (resource.getLikesD() > 0) resource.setLikesD(resource.getLikesD() - 1);
                 }
-                if (params.getActionType() == 5){
-                    existed.setHasFaved(0);
+                if (params.getActionType() == ActionType.FAV.getValue()){
+                    existed.setHasFaved(BoolType.FALSE.getValue());
+                    if (resource.getFavsD() > 0) resource.setFavsD(resource.getFavsD() - 1);
                 }
-                if (params.getActionType() == 6){
+                if (params.getActionType() == ActionType.COMMENT.getValue()){
                     existed.setComment("");
                     existed.setCommentToUserid(0);
                 }
                 resourceUserRepo.save(existed);
+                resourceRepo.save(resource);
                 return;
             }
-            if (params.getActionType() == 3) {
+            if (params.getActionType() == ActionType.TAG.getValue()) {
                 MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
                         params.getResourceId(),params.getUserId(),params.getTagId());
                 if (existed != null){
                     resourceUserTagRepo.delete(existed);
+                    decreaseTagCount(resource, params.getTagId());
+                    resourceRepo.save(resource);
+                    return;
                 }
             }
         }
+    }
+
+    public int doAddTag(RequestAddTag params) {
+        MainTagDict existed = tagDictRepo.findByTagNameAndTagResourceType(params.getTagName(), (byte)params.getTagResourceType());
+        if (existed != null) {
+            return existed.getTagId();
+        }
+        MainTagDict tag = new MainTagDict();
+        tag.setTagName(params.getTagName());
+        tag.setTagResourceType((byte)params.getTagResourceType());
+        tagDictRepo.save(tag);
+        return 0;
+    }
+
+    public void doDeleteTag(int tagId) {
+        tagDictRepo.delete((long)tagId);
     }
 }

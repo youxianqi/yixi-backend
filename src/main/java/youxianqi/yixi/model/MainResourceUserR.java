@@ -19,10 +19,10 @@ public class MainResourceUserR {
   private Integer userId;
   @Column(name = "\"views\"", nullable = false)
   private Integer views;
-  @Column(name = "\"likes\"", nullable = false)
-  private Integer likes;
+  @Column(name = "\"has_liked\"", nullable = false)
+  private Byte hasLiked;
   @Column(name = "\"has_faved\"", nullable = false)
-  private Integer hasFaved;
+  private Byte hasFaved;
   @Column(name = "\"comment_to_userid\"", nullable = false)
   private Integer commentToUserid;
   @Column(name = "\"comment\"", nullable = false)

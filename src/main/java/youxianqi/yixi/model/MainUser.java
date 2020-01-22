@@ -22,14 +22,14 @@ public class MainUser {
    * SexType,2,male,男
    */
   @Column(name = "\"sex_type\"", nullable = false)
-  private Short sexType;
+  private Byte sexType;
   /**
    * UserStatus,1,invisible,隐藏
    * UserStatus,2,valid,valid
    * UserStatus,3,disabled,已失效
    */
   @Column(name = "\"user_status\"", nullable = false)
-  private Short userStatus;
+  private Byte userStatus;
   @Column(name = "\"user_img\"", nullable = false)
   private String userImg;
   @Column(name = "\"local_update_time\"", nullable = false)

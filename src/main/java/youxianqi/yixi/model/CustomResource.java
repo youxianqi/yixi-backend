@@ -22,5 +22,6 @@ public interface CustomResource {
     int getLikes();
     int getFavs();
     String getTagsJson();
+    String getCommentsJson();
     Date getLocalUpdateTime();
 }

@@ -26,21 +26,21 @@ public class MainResource {
    * ResourceType,5,social,社交
    */
   @Column(name = "\"resource_type\"", nullable = false)
-  private Short resourceType;
+  private Byte resourceType;
   /**
    * ResourceStatus,1,drafting,未发布
    * ResourceStatus,2,published,已发布
    * ResourceStatus,3,disabled,已失效
    */
   @Column(name = "\"resource_status\"", nullable = false)
-  private Short resourceStatus;
+  private Byte resourceStatus;
   /**
    * ResourceAccessType,1,public
    * ResourceAccessType,2,user
    * ResourceAccessType,3,paidUser
    */
   @Column(name = "\"resource_access_type\"", nullable = false)
-  private Short resourceAccessType;
+  private Byte resourceAccessType;
   @Column(name = "\"title\"", nullable = false)
   private String title;
   @Column(name = "\"description\"", nullable = false)
@@ -63,7 +63,7 @@ public class MainResource {
    * ContentType,6,json,customized
    */
   @Column(name = "\"content_type\"", nullable = false)
-  private Short contentType;
+  private Byte contentType;
   @Column(name = "\"parent_id_d\"", nullable = false)
   private Integer parentIdD;
   @Column(name = "\"owner_user_id\"", nullable = false)
@@ -74,7 +74,7 @@ public class MainResource {
   private Integer likesD;
   @Column(name = "\"favs_d\"", nullable = false)
   private Integer favsD;
-  @Column(name = "\"tags_json_d\"", nullable = false)
+  @Column(name = "\"tags_json_d\"", nullable = true)
   private String tagsJsonD;
   @Column(name = "\"local_update_time\"", nullable = false)
   private Timestamp localUpdateTime;
