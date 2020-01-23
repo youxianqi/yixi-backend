@@ -3,6 +3,7 @@ package youxianqi.yixi.model;
 import java.sql.*;
 import javax.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Data
 @Entity(name = "youxianqi.yixi.model.MainTagDict")
@@ -25,5 +26,6 @@ public class MainTagDict {
   @Column(name = "\"tag_resource_type\"", nullable = false)
   private Byte tagResourceType;
   @Column(name = "\"local_update_time\"", nullable = false)
+  @UpdateTimestamp
   private Timestamp localUpdateTime;
 }

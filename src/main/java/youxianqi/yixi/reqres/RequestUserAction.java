@@ -8,7 +8,7 @@ public class RequestUserAction {
     private int resourceId;
     private int userId;
     private byte actionType;
-    private int tagId;
+    private String tagIds;
     private String comment;
     private int commentToUserId;
 }

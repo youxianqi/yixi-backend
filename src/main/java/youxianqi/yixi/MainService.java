@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+import youxianqi.yixi.consts.ActionType;
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
@@ -69,8 +70,9 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, Object> payload) {
         try {
             logger.info("login...request: {}", payload.toString());
-            if (dataService.verifyUser(get(payload, "username"), get(payload, "password"))) {
-                return ResponseEntity.ok(success());
+            int userId = dataService.verifyUser(get(payload, "username"), get(payload, "password"));
+            if (userId > 0) {
+                return ResponseEntity.ok(success(userId));
             } else {
                 return ResponseEntity.ok(failed("用户名或密码错误"));
             }
@@ -85,7 +87,8 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> changePwd(@RequestBody Map<String, Object> payload) {
         try {
             logger.info("changePwd...request: {}", payload.toString());
-            if (!dataService.verifyUser(get(payload, "username"), get(payload, "oldPassword"))) {
+            int userId = dataService.verifyUser(get(payload, "username"), get(payload, "oldPassword"));
+            if (userId == 0) {
                 return ResponseEntity.ok(failed("用户名或密码错误"));
             }
             dataService.changePwd(get(payload, "username"), get(payload, "password"));
@@ -122,10 +125,26 @@ public class MainService {
     @PostMapping(value = "/addOneAction")
     public ResponseEntity<Map<String, Object>> addOneAction(@RequestBody RequestUserAction payload) {
         try {
-            logger.info("addOneAction...request: {}", payload.toString());
             payload.setAddNotDelete(true);
-            dataService.doUserAction(payload);
-            return ResponseEntity.ok(success());
+            logger.info("addOneAction...request: {}", payload.toString());
+            boolean changed = dataService.doUserAction(payload);
+            if (changed) {
+                return ResponseEntity.ok(success());
+            }else {
+                if (payload.getActionType() == ActionType.BUY.getValue()) {
+                    return ResponseEntity.ok(failed("可能已经购买过了"));
+                }
+                if (payload.getActionType() == ActionType.LIKE.getValue()) {
+                    return ResponseEntity.ok(failed("可能已经赞过了"));
+                }
+                if (payload.getActionType() == ActionType.TAG.getValue()) {
+                    return ResponseEntity.ok(failed("可能已经标记过了"));
+                }
+                if (payload.getActionType() == ActionType.FAV.getValue()) {
+                    return ResponseEntity.ok(failed("可能已经收藏过了"));
+                }
+                return ResponseEntity.ok(failed("可能已经执行过该操作了"));
+            }
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(failed(e.getMessage()));
@@ -137,8 +156,13 @@ public class MainService {
         try {
             logger.info("deleteOneAction...request: {}", payload.toString());
             payload.setAddNotDelete(false);
-            dataService.doUserAction(payload);
-            return ResponseEntity.ok(success());
+            boolean changed = dataService.doUserAction(payload);
+            if (changed) {
+                return ResponseEntity.ok(success());
+            }
+            else {
+                return ResponseEntity.ok(failed("取消未成功"));
+            }
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(failed(e.getMessage()));

@@ -15,6 +15,7 @@ import youxianqi.yixi.model.*;
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
+import youxianqi.yixi.utils.ExceptionUtil;
 import youxianqi.yixi.utils.JsonUtil;
 
 import java.util.ArrayList;
@@ -94,15 +95,15 @@ public class DataService {
         return false;
     }
 
-    public boolean verifyUser(String username, String password) {
+    public int verifyUser(String username, String password) {
         List<MainUser> users = userRepo.findAll();
         for(MainUser user : users) {
             if (username.equals(user.getUserName())
                     && password.equals(user.getPassword())) {
-                return true;
+                return user.getUserId();
             }
         }
-        return false;
+        return 0;
     }
 
     public void changePwd(String username, String password) {
@@ -163,7 +164,7 @@ public class DataService {
     }
 
     @Transactional
-    public void doUserAction(RequestUserAction params) {
+    public boolean doUserAction(RequestUserAction params) {
         MainResource resource = resourceRepo.findOne(params.getResourceId());
         if (params.isAddNotDelete()) {
             if (params.getActionType() == ActionType.VIEW.getValue()
@@ -175,21 +176,24 @@ public class DataService {
                     existed = new MainResourceUserR();
                     existed.setResourceId(params.getResourceId());
                     existed.setUserId(params.getUserId());
+                    existed.setComment("");
                 }
                 if (params.getActionType() == ActionType.VIEW.getValue()){
                     existed.setViews(existed.getViews() + 1);
                     resource.setViewsD(resource.getViewsD() + 1);
                 }
                 if (params.getActionType() == ActionType.LIKE.getValue()){
-                    if (existed.getHasLiked() == BoolType.FALSE.getValue()) {
-                        resource.setLikesD(resource.getLikesD() + 1);
+                    if (existed.getHasLiked() == BoolType.TRUE.getValue()) {
+                        return false;
                     }
+                    resource.setLikesD(resource.getLikesD() + 1);
                     existed.setHasLiked(BoolType.TRUE.getValue());
                 }
                 if (params.getActionType() == ActionType.FAV.getValue()){
-                    if (existed.getHasFaved() == BoolType.FALSE.getValue()) {
-                        resource.setFavsD(resource.getFavsD() + 1);
+                    if (existed.getHasFaved() == BoolType.TRUE.getValue()) {
+                        return false;
                     }
+                    resource.setFavsD(resource.getFavsD() + 1);
                     existed.setHasFaved(BoolType.TRUE.getValue());
                 }
                 if (params.getActionType() == ActionType.COMMENT.getValue()){
@@ -198,21 +202,32 @@ public class DataService {
                 }
                 resourceUserRepo.save(existed);
                 resourceRepo.save(resource);
-                return;
+                return true;
             }
             if (params.getActionType() == ActionType.TAG.getValue()) {
-                MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
-                        params.getResourceId(),params.getUserId(),params.getTagId());
-                if (existed == null) {
-                    existed = new MainResourceUserTagR();
-                    existed.setResourceId(params.getResourceId());
-                    existed.setUserId(params.getUserId());
-                    existed.setTagId(params.getTagId());
-                    resourceUserTagRepo.save(existed);
-                    increaseTagCount(resource, params.getTagId());
-                    resourceRepo.save(resource);
-                    return;
+                String[] tagIds = params.getTagIds().split(",");
+                boolean changed = false;
+                for(String strTagId : tagIds) {
+                    try {
+                        int tagId = Integer.valueOf(strTagId.trim());
+                        MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
+                                params.getResourceId(),params.getUserId(), tagId);
+                        if (existed == null) {
+                            existed = new MainResourceUserTagR();
+                            existed.setResourceId(params.getResourceId());
+                            existed.setUserId(params.getUserId());
+                            existed.setTagId(tagId);
+                            resourceUserTagRepo.save(existed);
+                            increaseTagCount(resource, tagId);
+                            resourceRepo.save(resource);
+                            changed = true;
+                        }
+                    }
+                    catch (Exception e){
+                        logger.info(ExceptionUtil.getExceptionStack(e));
+                    }
                 }
+                return changed;
             }
         }
         else {
@@ -227,14 +242,27 @@ public class DataService {
                     existed.setUserId(params.getUserId());
                 }
                 if (params.getActionType() == ActionType.VIEW.getValue()){
-                    if (existed.getViews() > 0) existed.setViews(existed.getViews() - 1);
-                    if (resource.getViewsD() > 0) resource.setViewsD(resource.getViewsD() - 1);
+                    if (existed.getViews() <= 0) {
+                        return false;
+                    }
+                    existed.setViews(existed.getViews() - 1);
+                    if (resource.getViewsD() > 0) {
+                        resource.setViewsD(resource.getViewsD() - 1);
+                    }
                 }
                 if (params.getActionType() == ActionType.LIKE.getValue()){
+                    if (existed.getHasLiked() == BoolType.FALSE.getValue()) {
+                        return false;
+                    }
                     existed.setHasLiked(BoolType.FALSE.getValue());
-                    if (resource.getLikesD() > 0) resource.setLikesD(resource.getLikesD() - 1);
+                    if (resource.getLikesD() > 0) {
+                        resource.setLikesD(resource.getLikesD() - 1);
+                    }
                 }
                 if (params.getActionType() == ActionType.FAV.getValue()){
+                    if (existed.getHasFaved() == BoolType.FALSE.getValue()) {
+                        return false;
+                    }
                     existed.setHasFaved(BoolType.FALSE.getValue());
                     if (resource.getFavsD() > 0) resource.setFavsD(resource.getFavsD() - 1);
                 }
@@ -244,19 +272,30 @@ public class DataService {
                 }
                 resourceUserRepo.save(existed);
                 resourceRepo.save(resource);
-                return;
+                return true;
             }
             if (params.getActionType() == ActionType.TAG.getValue()) {
-                MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
-                        params.getResourceId(),params.getUserId(),params.getTagId());
-                if (existed != null){
-                    resourceUserTagRepo.delete(existed);
-                    decreaseTagCount(resource, params.getTagId());
-                    resourceRepo.save(resource);
-                    return;
+                String[] tagIds = params.getTagIds().split(",");
+                boolean changed = false;
+                for (String strTagId : tagIds) {
+                    try {
+                        int tagId = Integer.valueOf(strTagId.trim());
+                        MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
+                                params.getResourceId(), params.getUserId(), tagId);
+                        if (existed != null) {
+                            resourceUserTagRepo.delete(existed);
+                            decreaseTagCount(resource, tagId);
+                            resourceRepo.save(resource);
+                            changed = true;
+                        }
+                    } catch (Exception e) {
+                        logger.info(ExceptionUtil.getExceptionStack(e));
+                    }
                 }
+                return changed;
             }
         }
+        return false;
     }
 
     public int doAddTag(RequestAddTag params) {

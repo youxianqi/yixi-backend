@@ -90,7 +90,7 @@ public class SQL {
             sqlTemplate = GET_RES_LIST_BY_OWNER;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
-            return em.createNativeQuery(sql)
+            return em.createNativeQuery(sql, CustomResource.class)
                     .setParameter("p_ktree_ids", params.getKtreeIds())
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
@@ -102,7 +102,7 @@ public class SQL {
             sqlTemplate = GET_RES_LIST_BY_FAV;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
-            return em.createNativeQuery(sql)
+            return em.createNativeQuery(sql, CustomResource.class)
                     .setParameter("p_ktree_ids", params.getKtreeIds())
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
@@ -114,7 +114,7 @@ public class SQL {
             sqlTemplate = GET_RES_LIST_BY_TAGS;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
-            return em.createNativeQuery(sql)
+            return em.createNativeQuery(sql, CustomResource.class)
                     .setParameter("p_ktree_ids", params.getKtreeIds())
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
