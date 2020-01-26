@@ -219,7 +219,6 @@ public class DataService {
                             existed.setTagId(tagId);
                             resourceUserTagRepo.save(existed);
                             increaseTagCount(resource, tagId);
-                            resourceRepo.save(resource);
                             changed = true;
                         }
                     }

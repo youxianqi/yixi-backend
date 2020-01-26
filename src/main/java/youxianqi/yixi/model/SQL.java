@@ -9,7 +9,9 @@ import youxianqi.yixi.consts.OrderByType;
 import youxianqi.yixi.reqres.RequestResourceList;
 
 import javax.persistence.EntityManager;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class SQL {
@@ -86,12 +88,15 @@ public class SQL {
             offset = params.getOffset();
         }
         String sqlTemplate = GET_RES_LIST;
+        List<String> lst = Arrays.asList(params.getKtreeIds().split(","));
+        List<Integer> ktreeIds = lst.stream().map(x -> Integer.valueOf(x)).collect(Collectors.toList());
+
         if (params.getOwnerUserId() != null) {
             sqlTemplate = GET_RES_LIST_BY_OWNER;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
-                    .setParameter("p_ktree_ids", params.getKtreeIds())
+                    .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
                     .setParameter("p_resource_access_type", params.getResourceAccessType())
@@ -103,7 +108,7 @@ public class SQL {
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
-                    .setParameter("p_ktree_ids", params.getKtreeIds())
+                    .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
                     .setParameter("p_resource_access_type", params.getResourceAccessType())
@@ -115,7 +120,7 @@ public class SQL {
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
-                    .setParameter("p_ktree_ids", params.getKtreeIds())
+                    .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
                     .setParameter("p_resource_access_type", params.getResourceAccessType())
@@ -126,7 +131,7 @@ public class SQL {
             sqlTemplate = GET_RES_LIST;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             return em.createNativeQuery(sql, CustomResource.class)
-                    .setParameter("p_ktree_ids", params.getKtreeIds())
+                    .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
                     .setParameter("p_resource_access_type", params.getResourceAccessType())
