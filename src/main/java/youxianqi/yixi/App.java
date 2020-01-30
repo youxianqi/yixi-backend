@@ -19,8 +19,8 @@ public class App
     {
         try {
             ApplicationContext springAppContext = SpringApplication.run(App.class);
-            springAppContext.getBean(MainService.class).init();
-            springAppContext.getBean(MainService.class).start();
+            springAppContext.getBean(MainController.class).init();
+            springAppContext.getBean(MainController.class).start();
 
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
