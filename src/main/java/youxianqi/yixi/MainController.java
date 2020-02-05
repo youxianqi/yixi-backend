@@ -9,13 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import youxianqi.yixi.consts.ActionType;
-<<<<<<< HEAD:src/main/java/youxianqi/yixi/MainController.java
 import youxianqi.yixi.model.MainResourceContent;
 import youxianqi.yixi.oss.UploadController;
 import youxianqi.yixi.reqres.RequestAddResource;
-=======
-import youxianqi.yixi.oss.UploadController;
->>>>>>> 892173f2e79bade624fdf470d6bd43d668309f90:src/main/java/youxianqi/yixi/MainController.java
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
