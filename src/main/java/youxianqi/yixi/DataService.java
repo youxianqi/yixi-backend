@@ -1,8 +1,10 @@
 package youxianqi.yixi;
 
+import net.sf.json.JSON;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,17 +13,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import youxianqi.yixi.consts.ActionType;
 import youxianqi.yixi.consts.BoolType;
+import youxianqi.yixi.consts.MediaType;
 import youxianqi.yixi.model.*;
+import youxianqi.yixi.reqres.RequestAddResource;
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
 import youxianqi.yixi.utils.ExceptionUtil;
 import youxianqi.yixi.utils.JsonUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.persistence.Column;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -30,6 +35,9 @@ public class DataService {
 
     @Autowired
     ResourceRepo resourceRepo;
+
+    @Autowired
+    ResourceContentRepo resourceContentRepo;
 
     @Autowired
     UserRepo userRepo;
@@ -86,7 +94,7 @@ public class DataService {
         users.add(Pair.of("小鱼说", "12345678"));
         users.add(Pair.of("小县城", "12345678")); //25d55ad283aa400af464c76d713c07ad
 
-        for(Pair<String, String> pair : users) {
+        for (Pair<String, String> pair : users) {
             if (username.equals(pair.getLeft())
                     && password.equals(DigestUtils.md5Hex(pair.getRight()))) {
                 return true;
@@ -97,7 +105,7 @@ public class DataService {
 
     public int verifyUser(String username, String password) {
         List<MainUser> users = userRepo.findAll();
-        for(MainUser user : users) {
+        for (MainUser user : users) {
             if (username.equals(user.getUserName())
                     && password.equals(user.getPassword())) {
                 return user.getUserId();
@@ -131,13 +139,12 @@ public class DataService {
         return sqlQuery.queryResourceList(params);
     }
 
-    private static void increaseTagCount(MainResource resource, int tagId){
+    private static void increaseTagCount(MainResource resource, int tagId) {
         Map<Integer, Integer> tags = null;
         int tagCount = 0;
         if (StringUtils.isEmpty(resource.getTagsJsonD())) {
             tags = new HashMap<>();
-        }
-        else {
+        } else {
             tags = JsonUtil.stringToObject(resource.getTagsJsonD(), HashMap.class);
             if (tags.containsKey(tagId)) {
                 tagCount = tags.get(tagId);
@@ -147,7 +154,7 @@ public class DataService {
         resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
 
-    private static void decreaseTagCount(MainResource resource, int tagId){
+    private static void decreaseTagCount(MainResource resource, int tagId) {
         Map<Integer, Integer> tags = null;
         if (StringUtils.isEmpty(resource.getTagsJsonD())) {
             return;
@@ -178,25 +185,25 @@ public class DataService {
                     existed.setUserId(params.getUserId());
                     existed.setComment("");
                 }
-                if (params.getActionType() == ActionType.VIEW.getValue()){
+                if (params.getActionType() == ActionType.VIEW.getValue()) {
                     existed.setViews(existed.getViews() + 1);
                     resource.setViewsD(resource.getViewsD() + 1);
                 }
-                if (params.getActionType() == ActionType.LIKE.getValue()){
+                if (params.getActionType() == ActionType.LIKE.getValue()) {
                     if (existed.getHasLiked() == BoolType.TRUE.getValue()) {
                         return false;
                     }
                     resource.setLikesD(resource.getLikesD() + 1);
                     existed.setHasLiked(BoolType.TRUE.getValue());
                 }
-                if (params.getActionType() == ActionType.FAV.getValue()){
+                if (params.getActionType() == ActionType.FAV.getValue()) {
                     if (existed.getHasFaved() == BoolType.TRUE.getValue()) {
                         return false;
                     }
                     resource.setFavsD(resource.getFavsD() + 1);
                     existed.setHasFaved(BoolType.TRUE.getValue());
                 }
-                if (params.getActionType() == ActionType.COMMENT.getValue()){
+                if (params.getActionType() == ActionType.COMMENT.getValue()) {
                     existed.setComment(params.getComment());
                     existed.setCommentToUserid(params.getCommentToUserId());
                 }
@@ -207,11 +214,11 @@ public class DataService {
             if (params.getActionType() == ActionType.TAG.getValue()) {
                 String[] tagIds = params.getTagIds().split(",");
                 boolean changed = false;
-                for(String strTagId : tagIds) {
+                for (String strTagId : tagIds) {
                     try {
                         int tagId = Integer.valueOf(strTagId.trim());
                         MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
-                                params.getResourceId(),params.getUserId(), tagId);
+                                params.getResourceId(), params.getUserId(), tagId);
                         if (existed == null) {
                             existed = new MainResourceUserTagR();
                             existed.setResourceId(params.getResourceId());
@@ -221,15 +228,13 @@ public class DataService {
                             increaseTagCount(resource, tagId);
                             changed = true;
                         }
-                    }
-                    catch (Exception e){
+                    } catch (Exception e) {
                         logger.info(ExceptionUtil.getExceptionStack(e));
                     }
                 }
                 return changed;
             }
-        }
-        else {
+        } else {
             if (params.getActionType() == ActionType.VIEW.getValue()
                     || params.getActionType() == ActionType.LIKE.getValue()
                     || params.getActionType() == ActionType.FAV.getValue()
@@ -240,7 +245,7 @@ public class DataService {
                     existed.setResourceId(params.getResourceId());
                     existed.setUserId(params.getUserId());
                 }
-                if (params.getActionType() == ActionType.VIEW.getValue()){
+                if (params.getActionType() == ActionType.VIEW.getValue()) {
                     if (existed.getViews() <= 0) {
                         return false;
                     }
@@ -249,7 +254,7 @@ public class DataService {
                         resource.setViewsD(resource.getViewsD() - 1);
                     }
                 }
-                if (params.getActionType() == ActionType.LIKE.getValue()){
+                if (params.getActionType() == ActionType.LIKE.getValue()) {
                     if (existed.getHasLiked() == BoolType.FALSE.getValue()) {
                         return false;
                     }
@@ -258,14 +263,14 @@ public class DataService {
                         resource.setLikesD(resource.getLikesD() - 1);
                     }
                 }
-                if (params.getActionType() == ActionType.FAV.getValue()){
+                if (params.getActionType() == ActionType.FAV.getValue()) {
                     if (existed.getHasFaved() == BoolType.FALSE.getValue()) {
                         return false;
                     }
                     existed.setHasFaved(BoolType.FALSE.getValue());
                     if (resource.getFavsD() > 0) resource.setFavsD(resource.getFavsD() - 1);
                 }
-                if (params.getActionType() == ActionType.COMMENT.getValue()){
+                if (params.getActionType() == ActionType.COMMENT.getValue()) {
                     existed.setComment("");
                     existed.setCommentToUserid(0);
                 }
@@ -298,18 +303,112 @@ public class DataService {
     }
 
     public int doAddTag(RequestAddTag params) {
-        MainTagDict existed = tagDictRepo.findByTagNameAndTagResourceType(params.getTagName(), (byte)params.getTagResourceType());
+        MainTagDict existed = tagDictRepo.findByTagNameAndTagResourceType(params.getTagName(), (byte) params.getTagResourceType());
         if (existed != null) {
             return existed.getTagId();
         }
         MainTagDict tag = new MainTagDict();
         tag.setTagName(params.getTagName());
-        tag.setTagResourceType((byte)params.getTagResourceType());
+        tag.setTagResourceType((byte) params.getTagResourceType());
         tagDictRepo.save(tag);
         return 0;
     }
 
     public void doDeleteTag(int tagId) {
-        tagDictRepo.delete((long)tagId);
+        tagDictRepo.delete((long) tagId);
+    }
+
+    @Transactional
+    public int addResource(RequestAddResource payload) {
+        MainResource resource = new MainResource();
+        resource.setKtreeId(payload.getKtreeId());
+        resource.setResourceType((byte) payload.getResourceType());
+        resource.setResourceStatus((byte) 2);
+        resource.setResourceAccessType((byte) 1);
+        resource.setContentTitle(payload.getContentTitle());
+        resource.setContentDesc(payload.getContentDesc());
+
+        String pattern = "yyyy-MM-dd";
+        Date time = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        try {
+            time = simpleDateFormat.parse(payload.getContentTime());
+        } catch (ParseException e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+        }
+        resource.setContentTime(new Timestamp(time.getTime()));
+
+        resource.setContentCount((byte) payload.getContentCount());
+        resource.setContentMediaType((byte) payload.getContentMediaType());
+        resource.setOwnerUserId(payload.getUserid());
+
+        List<String> urls = new ArrayList<>();
+        if (payload.getContentMediaType() == MediaType.VIDEO.getValue()) {
+            urls = JsonUtil.stringToObject(payload.getMediaUrlListJson(), List.class);
+            if (urls.size() > 0) {
+                resource.setContentThumbnail(urls.get(0) + "?x-oss-process=video/snapshot,t_10000,m_fast,w_800");
+            }
+        }
+        else if (payload.getContentMediaType() == MediaType.IMAGE.getValue()) {
+            urls = JsonUtil.stringToObject(payload.getMediaUrlListJson(), List.class);
+            if (urls.size() > 0) {
+                resource.setContentThumbnail(urls.get(0));
+            }
+        }
+        List<String> texts = new ArrayList<>();
+        if (payload.getContentMediaType() == MediaType.TEXT.getValue()) {
+            texts = JsonUtil.stringToObject(payload.getMediaUrlListJson(), List.class);
+        }
+        List<Map<String, Object>> eiList = new ArrayList<>();
+        if (payload.getContentMediaType() == MediaType.EXERCISE_ITEM.getValue()) {
+            eiList = JsonUtil.stringToObject(payload.getEiListJson(), List.class);
+        }
+
+        if (StringUtils.isNotEmpty(payload.getContentThumbnail())) {
+            resource.setContentThumbnail(payload.getContentThumbnail());
+        }
+        resource = resourceRepo.save(resource);
+        logger.info("saved successfully...resourceId={}", resource.getResourceId());
+
+        for (int i = 0; i < payload.getContentCount(); i++) {
+            MainResourceContent content = new MainResourceContent();
+            content.setContentSeq((byte) (i + 1));
+            content.setResourceId(resource.getResourceId());
+            content.setContentMediaType((byte) payload.getContentMediaType());
+            if (payload.getContentMediaType() == MediaType.VIDEO.getValue()
+                    || payload.getContentMediaType() == MediaType.IMAGE.getValue()) {
+                content.setMediaUrl(urls.get(i));
+            } else if (payload.getContentMediaType() == MediaType.TEXT.getValue()) {
+                content.setTextContent(texts.get(i));
+            } else if (payload.getContentMediaType() == MediaType.EXERCISE_ITEM.getValue()) {
+                Map<String, Object> eiMap = eiList.get(i);
+                if (eiMap.containsKey("question")) {
+                    content.setEiQuestion(eiMap.get("question").toString());
+                }
+                if (eiMap.containsKey("explain")) {
+                    content.setEiExplain(eiMap.get("explain").toString());
+                }
+                if (eiMap.containsKey("correctAnsCnt")) {
+                    content.setEiCorrectAnsCnt((byte) Integer.parseInt(eiMap.get("correctAnsCnt").toString()));
+                }
+                if (eiMap.containsKey("correctAnsListJson")) {
+                    content.setEiCorrectAnsListJson(eiMap.get("correctAnsListJson").toString());
+                }
+            }
+            resourceContentRepo.save(content);
+        }
+        return resource.getResourceId();
+    }
+
+    public List<MainResourceContent> getResourceContent(int resourceId) {
+        return resourceContentRepo.findByResourceId(resourceId);
+    }
+
+    @Transactional
+    public void deleteResource(int resourceId) {
+        resourceRepo.delete(resourceId);
+        resourceContentRepo.deleteByResourceId(resourceId);
+        resourceUserRepo.deleteByResourceId(resourceId);
+        resourceUserTagRepo.deleteByResourceId(resourceId);
     }
 }

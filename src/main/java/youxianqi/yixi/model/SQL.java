@@ -24,12 +24,12 @@ public class SQL {
             "    res.resource_type as resourceType,\n" +
             "    res.resource_status as resourceStatus,\n" +
             "    res.resource_access_type as resourceAccessType,\n" +
-            "    res.data_time as dataTime,\n" +
-            "    res.title as title,\n" +
-            "    res.description as description,\n" +
-            "    res.thumbnail_url as thumbnailUrl,\n" +
-            "    res.content as content,\n" +
-            "    res.content_type as contentType,\n" +
+            "    res.content_time as contentTime,\n" +
+            "    res.content_title as contentTitle,\n" +
+            "    res.content_desc as contentDesc,\n" +
+            "    res.content_thumbnail as contentThumbnail,\n" +
+            "    res.content_media_type as contentMediaType,\n" +
+            "    res.content_count as contentCount,\n" +
             "    res.owner_user_id as ownerUserId,\n" +
             "    u.user_name as ownerUserName,\n" +
             "    u.sex_type as ownerUserSexType,\n" +
@@ -147,13 +147,13 @@ public class SQL {
             direction = "";
         }
 
-        String orderBy = "res.data_time";
+        String orderBy = "res.content_time";
 
         if (orderByType == null)
             return orderBy + direction;
 
-        if (orderByType == OrderByType.DATA_TIME.getValue()) {
-            orderBy = "res.data_time";
+        if (orderByType == OrderByType.CONTENT_TIME.getValue()) {
+            orderBy = "res.content_time";
         }
         else if (orderByType == OrderByType.UPDATE_TIME.getValue()) {
             orderBy = "res.local_update_time";

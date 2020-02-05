@@ -9,27 +9,36 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import youxianqi.yixi.consts.ActionType;
+import youxianqi.yixi.model.MainResourceContent;
+import youxianqi.yixi.oss.UploadController;
+import youxianqi.yixi.reqres.RequestAddResource;
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
 import youxianqi.yixi.utils.ExceptionUtil;
 import youxianqi.yixi.utils.JsonUtil;
+import youxianqi.yixi.utils.ResponseUtil;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @EnableScheduling
 @RestController
 @RequestMapping("/api")
 @Component
-public class MainService {
-    static private Logger logger = LoggerFactory.getLogger(MainService.class);
+public class MainController {
+    static private Logger logger = LoggerFactory.getLogger(MainController.class);
 
     @Autowired
     DataService dataService;
 
+    @Autowired
+    UploadController uploadController;
+
     public void init() {
         dataService.init();
+        uploadController.init();
     }
 
     public void start() {
@@ -39,28 +48,9 @@ public class MainService {
 
     @PostMapping(value = "/serverList")
     public ResponseEntity<Map<String, Object>> serverList() {
-        return ResponseEntity.ok(success(dataService.serverList()));
+        return ResponseEntity.ok(ResponseUtil.success(dataService.serverList()));
     }
 
-    static private Map<String, Object> success() {
-        return  response("ok", true);
-    }
-
-    static private Map<String, Object> success(Object data) {
-        return response(data, true);
-    }
-
-    static private Map<String, Object> failed(Object data) {
-        return response(data, false);
-    }
-
-    static private Map<String, Object> response(Object data, boolean success) {
-        logger.info("response...{}", JsonUtil.objectToString(data, ""));
-        Map<String, Object> ret = new HashMap<>();
-        ret.put("status", success ? 200 : 201);
-        ret.put("data", data);
-        return ret;
-    }
 
     static private String get(Map<String, Object> payload, String key) {
         return (String) payload.get(key);
@@ -72,14 +62,14 @@ public class MainService {
             logger.info("login...request: {}", payload.toString());
             int userId = dataService.verifyUser(get(payload, "username"), get(payload, "password"));
             if (userId > 0) {
-                return ResponseEntity.ok(success(userId));
+                return ResponseEntity.ok(ResponseUtil.success(userId));
             } else {
-                return ResponseEntity.ok(failed("用户名或密码错误"));
+                return ResponseEntity.ok(ResponseUtil.failed("用户名或密码错误"));
             }
         }
         catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -89,14 +79,14 @@ public class MainService {
             logger.info("changePwd...request: {}", payload.toString());
             int userId = dataService.verifyUser(get(payload, "username"), get(payload, "oldPassword"));
             if (userId == 0) {
-                return ResponseEntity.ok(failed("用户名或密码错误"));
+                return ResponseEntity.ok(ResponseUtil.failed("用户名或密码错误"));
             }
             dataService.changePwd(get(payload, "username"), get(payload, "password"));
-            return ResponseEntity.ok(success());
+            return ResponseEntity.ok(ResponseUtil.success());
         } catch (Exception e) {
 
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -104,10 +94,10 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getTags() {
         try {
             logger.info("getTags...");
-            return ResponseEntity.ok(success(dataService.getTags()));
+            return ResponseEntity.ok(ResponseUtil.success(dataService.getTags()));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -115,10 +105,10 @@ public class MainService {
     public ResponseEntity<Map<String, Object>> getResourceList(@RequestBody RequestResourceList payload) {
         try {
             logger.info("queryResourceList...request: {}", payload.toString());
-            return ResponseEntity.ok(success(dataService.getResourceList(payload)));
+            return ResponseEntity.ok(ResponseUtil.success(dataService.getResourceList(payload)));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -129,25 +119,25 @@ public class MainService {
             logger.info("addOneAction...request: {}", payload.toString());
             boolean changed = dataService.doUserAction(payload);
             if (changed) {
-                return ResponseEntity.ok(success());
+                return ResponseEntity.ok(ResponseUtil.success());
             }else {
                 if (payload.getActionType() == ActionType.BUY.getValue()) {
-                    return ResponseEntity.ok(failed("可能已经购买过了"));
+                    return ResponseEntity.ok(ResponseUtil.failed("可能已经购买过了"));
                 }
                 if (payload.getActionType() == ActionType.LIKE.getValue()) {
-                    return ResponseEntity.ok(failed("可能已经赞过了"));
+                    return ResponseEntity.ok(ResponseUtil.failed("可能已经赞过了"));
                 }
                 if (payload.getActionType() == ActionType.TAG.getValue()) {
-                    return ResponseEntity.ok(failed("可能已经标记过了"));
+                    return ResponseEntity.ok(ResponseUtil.failed("可能已经标记过了"));
                 }
                 if (payload.getActionType() == ActionType.FAV.getValue()) {
-                    return ResponseEntity.ok(failed("可能已经收藏过了"));
+                    return ResponseEntity.ok(ResponseUtil.failed("可能已经收藏过了"));
                 }
-                return ResponseEntity.ok(failed("可能已经执行过该操作了"));
+                return ResponseEntity.ok(ResponseUtil.failed("可能已经执行过该操作了"));
             }
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -158,14 +148,14 @@ public class MainService {
             payload.setAddNotDelete(false);
             boolean changed = dataService.doUserAction(payload);
             if (changed) {
-                return ResponseEntity.ok(success());
+                return ResponseEntity.ok(ResponseUtil.success());
             }
             else {
-                return ResponseEntity.ok(failed("取消未成功"));
+                return ResponseEntity.ok(ResponseUtil.failed("取消未成功"));
             }
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -175,12 +165,12 @@ public class MainService {
             logger.info("addTag...request: {}", payload.toString());
             int existedId = dataService.doAddTag(payload);
             if (existedId > 0) {
-                return ResponseEntity.ok(failed("已经存在该标签, id为" + existedId));
+                return ResponseEntity.ok(ResponseUtil.failed("已经存在该标签, id为" + existedId));
             }
-            return ResponseEntity.ok(success());
+            return ResponseEntity.ok(ResponseUtil.success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 
@@ -189,10 +179,46 @@ public class MainService {
         try {
             logger.info("deleteTag...request: {}", payload.toString());
             dataService.doDeleteTag(Integer.parseInt(get(payload, "tagId")));
-            return ResponseEntity.ok(success());
+            return ResponseEntity.ok(ResponseUtil.success());
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
-            return ResponseEntity.ok(failed(e.getMessage()));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/addResource")
+    public ResponseEntity<Map<String, Object>> addResource(@RequestBody RequestAddResource payload) {
+        try {
+            logger.info("addResource...request: {}", payload.toString());
+            int newId = dataService.addResource(payload);
+            return ResponseEntity.ok(ResponseUtil.success(newId));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/getResourceContent")
+    public ResponseEntity<Map<String, Object>> getResourceContent(@RequestBody Map<String, Object> payload) {
+        try {
+            logger.info("getResourceContent...request: {}", payload.toString());
+            List<MainResourceContent> r = dataService.getResourceContent(
+                    Integer.parseInt(payload.get("resourceId").toString()));
+            return ResponseEntity.ok(ResponseUtil.success(r));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
+        }
+    }
+    @PostMapping(value = "/deleteResource")
+    public ResponseEntity<Map<String, Object>> deleteResource(@RequestBody Map<String, Object> payload) {
+        try {
+            logger.info("getResourceContent...request: {}", payload.toString());
+            dataService.deleteResource(Integer.parseInt(payload.get("resourceId").toString()));
+            return ResponseEntity.ok(ResponseUtil.success());
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
 }

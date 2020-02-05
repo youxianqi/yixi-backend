@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ResourceUserRepo extends JpaRepository<MainResourceUserR, Long> {
     MainResourceUserR findOneByResourceIdAndUserId(int resourceId, int userId);
+    void deleteByResourceId(int resourceId);
 }

@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ResourceUserTagRepo extends JpaRepository<MainResourceUserTagR, Long> {
     MainResourceUserTagR findOneByResourceIdAndUserIdAndTagId(int resourceId, int userId, int tagId);
+    void deleteByResourceId(int resourceId);
 }

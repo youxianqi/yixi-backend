@@ -1,7 +1,7 @@
 jdbcSettings:
-  url: "jdbc:mysql://172.16.87.11:3306/albert"
-  username: "sumscope"
-  password: "sumscope"
+  url: "jdbc:mysql://localhost:3306/albert"
+  username: "root"
+  password: ""
   driverClassName: "com.mysql.jdbc.Driver"
 
 #tableScanMode: RuleBased
