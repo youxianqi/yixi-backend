@@ -9,9 +9,13 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import youxianqi.yixi.consts.ActionType;
+<<<<<<< HEAD:src/main/java/youxianqi/yixi/MainController.java
 import youxianqi.yixi.model.MainResourceContent;
 import youxianqi.yixi.oss.UploadController;
 import youxianqi.yixi.reqres.RequestAddResource;
+=======
+import youxianqi.yixi.oss.UploadController;
+>>>>>>> 892173f2e79bade624fdf470d6bd43d668309f90:src/main/java/youxianqi/yixi/MainController.java
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
@@ -180,6 +184,7 @@ public class MainController {
             logger.info("deleteTag...request: {}", payload.toString());
             dataService.doDeleteTag(Integer.parseInt(get(payload, "tagId")));
             return ResponseEntity.ok(ResponseUtil.success());
+<<<<<<< HEAD:src/main/java/youxianqi/yixi/MainController.java
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
@@ -216,6 +221,8 @@ public class MainController {
             logger.info("getResourceContent...request: {}", payload.toString());
             dataService.deleteResource(Integer.parseInt(payload.get("resourceId").toString()));
             return ResponseEntity.ok(ResponseUtil.success());
+=======
+>>>>>>> 892173f2e79bade624fdf470d6bd43d668309f90:src/main/java/youxianqi/yixi/MainController.java
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
