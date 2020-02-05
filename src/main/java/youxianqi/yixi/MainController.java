@@ -184,7 +184,6 @@ public class MainController {
             logger.info("deleteTag...request: {}", payload.toString());
             dataService.doDeleteTag(Integer.parseInt(get(payload, "tagId")));
             return ResponseEntity.ok(ResponseUtil.success());
-<<<<<<< HEAD:src/main/java/youxianqi/yixi/MainController.java
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
@@ -221,8 +220,6 @@ public class MainController {
             logger.info("getResourceContent...request: {}", payload.toString());
             dataService.deleteResource(Integer.parseInt(payload.get("resourceId").toString()));
             return ResponseEntity.ok(ResponseUtil.success());
-=======
->>>>>>> 892173f2e79bade624fdf470d6bd43d668309f90:src/main/java/youxianqi/yixi/MainController.java
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
             return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
