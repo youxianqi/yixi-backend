@@ -49,6 +49,12 @@ public class SQL {
                     "    and res.resource_status = :p_resource_status\n" +
                     "    and res.resource_access_type = :p_resource_access_type\n";
 
+    private static final String WHERE_RESOURCE_ID =
+            " where \n" +
+                    "    res.resource_id in (:p_resource_ids)\n";
+
+    public static final String GET_RES_LIST_BY_IDS = RES_USER + WHERE_RESOURCE_ID;
+
     public static final String GET_RES_LIST = RES_USER + WHERE +
             " order by %s limit %d,%d";
 
@@ -76,6 +82,15 @@ public class SQL {
 
     @Autowired
     EntityManager em;
+
+    public List<CustomResource> queryResourceListByIds(String resourceIds) {
+        List<String> lst = Arrays.asList(resourceIds.split(","));
+        List<Integer> idList = lst.stream().map(x -> Integer.valueOf(x)).collect(Collectors.toList());
+        String sqlTemplate = GET_RES_LIST_BY_IDS;
+        return em.createNativeQuery(sqlTemplate, CustomResource.class)
+                .setParameter("p_resource_ids", idList)
+                .getResultList();
+    }
 
     public List<CustomResource> queryResourceList(RequestResourceList params) {
         String orderBy = getOrderBy(params.getOrderByType(), params.getOrderByDirection());

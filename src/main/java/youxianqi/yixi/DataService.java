@@ -139,33 +139,42 @@ public class DataService {
         return sqlQuery.queryResourceList(params);
     }
 
+    public List<CustomResource> queryOneResource(int resourceId) {
+        return sqlQuery.queryResourceListByIds(String.valueOf(resourceId));
+    }
+
     private static void increaseTagCount(MainResource resource, int tagId) {
-        Map<Integer, Integer> tags = null;
+        Map<String, Integer> tags = null;
         int tagCount = 0;
         if (StringUtils.isEmpty(resource.getTagsJsonD())) {
             tags = new HashMap<>();
         } else {
             tags = JsonUtil.stringToObject(resource.getTagsJsonD(), HashMap.class);
-            if (tags.containsKey(tagId)) {
-                tagCount = tags.get(tagId);
+            if (tags.containsKey(String.valueOf(tagId))) {
+                tagCount = tags.get(String.valueOf(tagId));
             }
         }
-        tags.put(tagId, tagCount + 1);
+        tags.put(String.valueOf(tagId), tagCount + 1);
         resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
 
     private static void decreaseTagCount(MainResource resource, int tagId) {
-        Map<Integer, Integer> tags = null;
+        Map<String, Integer> tags = null;
         if (StringUtils.isEmpty(resource.getTagsJsonD())) {
             return;
         }
         tags = JsonUtil.stringToObject(resource.getTagsJsonD(), HashMap.class);
-        if (!tags.containsKey(tagId)) {
+        if (!tags.containsKey(String.valueOf(tagId))) {
             return;
         }
-        int tagCount = tags.get(tagId);
+        int tagCount = tags.get(String.valueOf(tagId));
         if (tagCount > 0) {
-            tags.put(tagId, tagCount - 1);
+            if (tagCount == 1) {
+                tags.remove(String.valueOf(tagId));
+            }
+            else {
+                tags.put(String.valueOf(tagId), tagCount - 1);
+            }
         }
         resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
@@ -213,26 +222,31 @@ public class DataService {
             }
             if (params.getActionType() == ActionType.TAG.getValue()) {
                 String[] tagIds = params.getTagIds().split(",");
-                boolean changed = false;
+
+                // first decrease resource's tag count
+                List<MainResourceUserTagR> existed = resourceUserTagRepo.findByResourceIdAndUserId(
+                        params.getResourceId(), params.getUserId());
+                for(MainResourceUserTagR t : existed) {
+                    decreaseTagCount(resource, t.getTagId());
+                }
+                // then delete from table resource-user-tag
+                resourceUserTagRepo.deleteByResourceIdAndUserId(params.getResourceId(), params.getUserId());
+
+                // then add back
                 for (String strTagId : tagIds) {
                     try {
                         int tagId = Integer.valueOf(strTagId.trim());
-                        MainResourceUserTagR existed = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(
-                                params.getResourceId(), params.getUserId(), tagId);
-                        if (existed == null) {
-                            existed = new MainResourceUserTagR();
-                            existed.setResourceId(params.getResourceId());
-                            existed.setUserId(params.getUserId());
-                            existed.setTagId(tagId);
-                            resourceUserTagRepo.save(existed);
-                            increaseTagCount(resource, tagId);
-                            changed = true;
-                        }
+                        MainResourceUserTagR v = new MainResourceUserTagR();
+                        v.setResourceId(params.getResourceId());
+                        v.setUserId(params.getUserId());
+                        v.setTagId(tagId);
+                        resourceUserTagRepo.save(v);
+                        increaseTagCount(resource, tagId);
                     } catch (Exception e) {
                         logger.info(ExceptionUtil.getExceptionStack(e));
                     }
                 }
-                return changed;
+                return true;
             }
         } else {
             if (params.getActionType() == ActionType.VIEW.getValue()
@@ -410,5 +424,14 @@ public class DataService {
         resourceContentRepo.deleteByResourceId(resourceId);
         resourceUserRepo.deleteByResourceId(resourceId);
         resourceUserTagRepo.deleteByResourceId(resourceId);
+    }
+
+    public List<Integer> getResourceUserTags(int resourceId, int userId){
+        List<MainResourceUserTagR> r = resourceUserTagRepo.findByResourceIdAndUserId(resourceId, userId);
+        List<Integer> ids = new ArrayList<>();
+        for(MainResourceUserTagR tag: r){
+            ids.add(tag.getTagId());
+        }
+        return ids;
     }
 }

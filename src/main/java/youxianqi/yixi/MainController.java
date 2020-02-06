@@ -221,4 +221,30 @@ public class MainController {
             return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
         }
     }
+    @PostMapping(value = "/queryOneResource")
+    public ResponseEntity<Map<String, Object>> queryOneResource(@RequestBody Map<String, Object> payload) {
+        try {
+            logger.info("getResourceContent...request: {}", payload.toString());
+            return ResponseEntity.ok(ResponseUtil.success(
+                    dataService.queryOneResource(Integer.parseInt(payload.get("resourceId").toString()))
+            ));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
+        }
+    }
+    @PostMapping(value = "/getResourceUserTags")
+    public ResponseEntity<Map<String, Object>> getResourceUserTags(@RequestBody Map<String, Object> payload) {
+        try {
+            logger.info("getResourceContent...request: {}", payload.toString());
+            List<Integer> tags = dataService.getResourceUserTags(
+                    Integer.parseInt(payload.get("resourceId").toString()),
+                    Integer.parseInt(payload.get("userId").toString()));
+            return ResponseEntity.ok(ResponseUtil.success(tags));
+        } catch (Exception e) {
+            logger.error(ExceptionUtil.getExceptionStack(e));
+            return ResponseEntity.ok(ResponseUtil.failed(e.getMessage()));
+        }
+    }
+
 }
