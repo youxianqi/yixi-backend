@@ -139,8 +139,8 @@ public class DataService {
         return sqlQuery.queryResourceList(params);
     }
 
-    public List<CustomResource> queryOneResource(int resourceId) {
-        return sqlQuery.queryResourceListByIds(String.valueOf(resourceId));
+    public List<CustomResource> queryOneResource(int userId, int resourceId) {
+        return sqlQuery.queryResourceListByIds(userId, String.valueOf(resourceId));
     }
 
     private static void increaseTagCount(MainResource resource, int tagId) {
@@ -371,7 +371,7 @@ public class DataService {
         }
         List<String> texts = new ArrayList<>();
         if (payload.getContentMediaType() == MediaType.TEXT.getValue()) {
-            texts = JsonUtil.stringToObject(payload.getMediaUrlListJson(), List.class);
+            texts = JsonUtil.stringToObject(payload.getTextListJson(), List.class);
         }
         List<Map<String, Object>> eiList = new ArrayList<>();
         if (payload.getContentMediaType() == MediaType.EXERCISE_ITEM.getValue()) {

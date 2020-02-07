@@ -38,9 +38,12 @@ public class SQL {
             "    res.likes_d as likes,\n" +
             "    res.favs_d as favs,\n" +
             "    res.tags_json_d as tagsJson,\n" +
-            "    res.local_update_time as localUpdateTime\n" +
+            "    res.local_update_time as localUpdateTime,\n" +
+            "    res_user.has_liked as myLike,\n" +
+            "    res_user.has_faved as myFav\n" +
             " from main_resource res\n" +
-            " left join main_user u on res.owner_user_id = u.user_id \n";
+            " left join main_user u on res.owner_user_id = u.user_id \n" +
+            " left join main_resource_user_r res_user on res.resource_id = res_user.resource_id and res_user.user_id = :p_user_id \n";
 
     private static final String WHERE =
             " where \n" +
@@ -63,10 +66,9 @@ public class SQL {
             " order by %s limit %d,%d";
 
     public static final String GET_RES_LIST_BY_FAV = RES_USER +
-            " left join main_resource_user_r fav on res.resource_id = fav.resource_id \n" +
             WHERE +
-            " and fav.user_id = :p_fav_user_id\n" +
-            " and fav.has_faved = 1\n" +
+            " and res_user.user_id = :p_fav_user_id\n" +
+            " and res_user.has_faved = 1\n" +
             " order by %s limit %d,%d";
 
     public static final String GET_RES_LIST_BY_TAGS = RES_USER +
@@ -83,11 +85,12 @@ public class SQL {
     @Autowired
     EntityManager em;
 
-    public List<CustomResource> queryResourceListByIds(String resourceIds) {
+    public List<CustomResource> queryResourceListByIds(Integer userId, String resourceIds) {
         List<String> lst = Arrays.asList(resourceIds.split(","));
         List<Integer> idList = lst.stream().map(x -> Integer.valueOf(x)).collect(Collectors.toList());
         String sqlTemplate = GET_RES_LIST_BY_IDS;
         return em.createNativeQuery(sqlTemplate, CustomResource.class)
+                .setParameter("p_user_id", userId)
                 .setParameter("p_resource_ids", idList)
                 .getResultList();
     }
@@ -111,6 +114,7 @@ public class SQL {
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
+                    .setParameter("p_user_id", params.getUserId())
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
@@ -123,6 +127,7 @@ public class SQL {
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
+                    .setParameter("p_user_id", params.getUserId())
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
@@ -135,6 +140,7 @@ public class SQL {
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
             logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
+                    .setParameter("p_user_id", params.getUserId())
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
@@ -145,7 +151,9 @@ public class SQL {
         else {
             sqlTemplate = GET_RES_LIST;
             String sql = String.format(sqlTemplate, orderBy, offset,limit);
+            logger.info("sql..." + sql);
             return em.createNativeQuery(sql, CustomResource.class)
+                    .setParameter("p_user_id", params.getUserId())
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())

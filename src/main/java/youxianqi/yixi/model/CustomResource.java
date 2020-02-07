@@ -32,4 +32,6 @@ public class CustomResource {
     private  String tagsJson;
     @JsonFormat(pattern="yyyy-MM-dd hh:mm")
     private  Date localUpdateTime;
+    private Integer myLike;
+    private Integer myFav;
 }

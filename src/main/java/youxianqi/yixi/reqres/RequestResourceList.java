@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class RequestResourceList {
+    private Integer userId;
     private String ktreeIds;
     private Integer resourceType;
     private Integer resourceStatus;

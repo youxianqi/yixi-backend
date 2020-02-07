@@ -226,7 +226,9 @@ public class MainController {
         try {
             logger.info("getResourceContent...request: {}", payload.toString());
             return ResponseEntity.ok(ResponseUtil.success(
-                    dataService.queryOneResource(Integer.parseInt(payload.get("resourceId").toString()))
+                    dataService.queryOneResource(
+                            Integer.parseInt(payload.get("userId").toString()),
+                            Integer.parseInt(payload.get("resourceId").toString()))
             ));
         } catch (Exception e) {
             logger.error(ExceptionUtil.getExceptionStack(e));
