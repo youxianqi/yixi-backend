@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class RequestAddResource {
+    private Integer resourceId; // is UPDATE when present
     private int userid;
     private int resourceType;
     private int ktreeId;

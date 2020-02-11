@@ -334,7 +334,13 @@ public class DataService {
 
     @Transactional
     public int addResource(RequestAddResource payload) {
-        MainResource resource = new MainResource();
+        MainResource resource = null;
+        if (payload.getResourceId() != null) {
+            resource = resourceRepo.getOne(payload.getResourceId());
+        }
+        else {
+            resource = new MainResource();
+        }
         resource.setKtreeId(payload.getKtreeId());
         resource.setResourceType((byte) payload.getResourceType());
         resource.setResourceStatus((byte) 2);
@@ -384,6 +390,9 @@ public class DataService {
         resource = resourceRepo.save(resource);
         logger.info("saved successfully...resourceId={}", resource.getResourceId());
 
+        if (payload.getResourceId() != null) {
+            resourceContentRepo.deleteByResourceId(payload.getResourceId());
+        }
         for (int i = 0; i < payload.getContentCount(); i++) {
             MainResourceContent content = new MainResourceContent();
             content.setContentSeq((byte) (i + 1));
