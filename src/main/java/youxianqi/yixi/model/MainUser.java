@@ -3,6 +3,7 @@ package youxianqi.yixi.model;
 import java.sql.*;
 import javax.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Data
 @Entity(name = "youxianqi.yixi.model.MainUser")
@@ -15,6 +16,8 @@ public class MainUser {
   private Integer userId;
   @Column(name = "\"user_name\"", nullable = false)
   private String userName;
+  @Column(name = "\"mobile\"", nullable = false)
+  private String mobile;
   @Column(name = "\"password\"", nullable = false)
   private String password;
   /**
@@ -31,7 +34,8 @@ public class MainUser {
   @Column(name = "\"user_status\"", nullable = false)
   private Byte userStatus;
   @Column(name = "\"user_img\"", nullable = false)
-  private String userImg;
+  private String userImg = "";
   @Column(name = "\"local_update_time\"", nullable = false)
+  @UpdateTimestamp
   private Timestamp localUpdateTime;
 }

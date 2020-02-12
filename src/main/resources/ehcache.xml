@@ -1,0 +1,61 @@
+<ehcache>
+    <diskStore path="java.io.tmpdir/cache"/>
+
+    <defaultCache
+            maxElementsInMemory="10000"
+            eternal="false"
+            timeToIdleSeconds="120"
+            timeToLiveSeconds="120"
+            overflowToDisk="false"
+            diskPersistent="false"/>
+
+    <cache name="captcha_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="600"
+           timeToLiveSeconds="600"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+
+    <cache name="mobileCode_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="900"
+           timeToLiveSeconds="900"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+    <cache name="user_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="300"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+    <cache name="resource_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="300"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+    <cache name="resource_query_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="300"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+    <cache name="tag_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="300"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
+</ehcache>

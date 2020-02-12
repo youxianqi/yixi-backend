@@ -1,13 +1,13 @@
 package youxianqi.yixi;
 
-import net.sf.json.JSON;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +15,15 @@ import youxianqi.yixi.consts.ActionType;
 import youxianqi.yixi.consts.BoolType;
 import youxianqi.yixi.consts.MediaType;
 import youxianqi.yixi.model.*;
+import youxianqi.yixi.oss.OssConfig;
 import youxianqi.yixi.reqres.RequestAddResource;
 import youxianqi.yixi.reqres.RequestAddTag;
 import youxianqi.yixi.reqres.RequestResourceList;
 import youxianqi.yixi.reqres.RequestUserAction;
-import youxianqi.yixi.utils.ExceptionUtil;
-import youxianqi.yixi.utils.JsonUtil;
+import youxianqi.yixi.utils.*;
 
-import javax.persistence.Column;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -52,9 +53,24 @@ public class DataService {
     ResourceUserTagRepo resourceUserTagRepo;
 
     @Autowired
+    CacheManager cacheManager;
+
+    @Autowired
     SQL sqlQuery;
 
+    @Autowired
+    AliSmsClient2 smsClient;
+
+    @Autowired
+    OssConfig ossConfig;
+
     public void init() {
+        smsClient.init(ossConfig.getOssAccessId(),
+                ossConfig.getOssAccessKey(),
+                "SMS_183247436",
+                "SMS_183242435",
+                "cn-shanghai",
+                "学习小站");
     }
 
     public void start() {
@@ -442,5 +458,99 @@ public class DataService {
             ids.add(tag.getTagId());
         }
         return ids;
+    }
+
+    public boolean existUser(String username) {
+        MainUser user = userRepo.findByUserName(username);
+        return (user != null);
+    }
+
+    public boolean existMobile(String mobile) {
+        MainUser user = userRepo.findByMobile(mobile);
+        return (user != null);
+    }
+
+    public byte[] newCaptcha(Integer width, Integer height,
+                             Integer verifySize, String hash) {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            String code = CaptchaUtil.outputVerifyImage(width, height, os, verifySize);
+            Cache cache = cacheManager.getCache("captcha_cache");
+            cache.put(hash, code);
+            return os.toByteArray();
+        } catch (IOException ioe) {
+            logger.info("Failed to generate captcha", ioe);
+            return new byte[] {};
+        }
+    }
+
+    public boolean verifyCaptcha(String hash, String captcha) {
+        Cache cache = cacheManager.getCache("captcha_cache");
+        String code = cache.get(hash, String.class);
+        if (code == null) {
+            return false;
+        }
+        return StringUtils.equalsIgnoreCase(code, captcha);
+    }
+
+    public boolean verifyMobileCode(String hash, String mobileCode) {
+        Cache cache = cacheManager.getCache("mobileCode_cache");
+        String code = cache.get(hash, String.class);
+        if (code == null) {
+            return false;
+        }
+        return StringUtils.equalsIgnoreCase(code, mobileCode);
+    }
+
+    public Pair<Boolean, String> sendMobileVerifycode(String hash, String captcha, String mobile) {
+        if (!verifyCaptcha(hash, captcha))
+            return Pair.of(false, "识别码不正确");
+        if (StringUtils.isEmpty(mobile)) {
+            return Pair.of(false, "手机号为空");
+        }
+        String mobileCode = RandomUtil.randomInteger(6);
+        Pair<Boolean, String> result = smsClient.sendVerify(mobile, mobileCode);
+        if (result.getLeft().booleanValue()) {
+            Cache cache = cacheManager.getCache("mobileCode_cache");
+            cache.put(hash, mobileCode);
+        }
+        return result;
+    }
+
+    public Pair<Boolean,String> registerUser(String userName, String hash, String mobile, String mobileCode, String password) {
+        if (userName.trim().length() < 2)
+            return Pair.of(false, "用户名长度不符要求");
+        if (existUser(userName))
+            return Pair.of(false, "用户名已注册");
+        if (mobile.trim().length() < 11){
+            return Pair.of(false, "手机号长度不符要求");
+        }
+        if (existMobile(mobile.trim()))
+            return Pair.of(false, "手机号已注册");
+        if (!verifyMobileCode(hash, mobileCode.trim()))
+            return Pair.of(false, "手机验证码不正确");
+
+        MainUser u = new MainUser();
+        u.setUserName(userName.trim());
+        u.setMobile(mobile.trim());
+        u.setPassword(password.trim());
+        u.setSexType((byte)0);
+        u.setUserStatus((byte)2);
+        userRepo.save(u);
+        return Pair.of(true,"ok");
+    }
+
+    public Pair<Boolean, String> resetPassword(String mobile) {
+        MainUser u = userRepo.findByMobile(mobile);
+        if (u == null){
+            return Pair.of(false, "该手机号未注册");
+        }
+        String newPwd = CaptchaUtil.generateVerifyCode(8);
+        u.setPassword(DigestUtils.md5Hex(newPwd));
+        Pair<Boolean, String> r = smsClient.sendResetPassword(mobile, newPwd);
+        if (!r.getLeft().booleanValue()){
+            return Pair.of(false, "发送重置密码短信失败：" + r.getLeft());
+        }
+        userRepo.save(u);
+        return r;
     }
 }
