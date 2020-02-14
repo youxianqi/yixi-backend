@@ -43,15 +43,8 @@ public class MainController {
     }
 
     public void start() {
-        String s = DigestUtils.md5Hex("12345678");
         dataService.start();
     }
-
-    @PostMapping(value = "/serverList")
-    public ResponseEntity<Map<String, Object>> serverList() {
-        return ResponseEntity.ok(ResponseUtil.success(dataService.serverList()));
-    }
-
 
     static private String get(Map<String, Object> payload, String key) {
         return (String) payload.get(key);

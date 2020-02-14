@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,49 +77,10 @@ public class DataService {
     }
 
     public void start() {
-//        MainResourceUserTagR r = resourceUserTagRepo.findOneByResourceIdAndUserIdAndTagId(5,1, 403);
-//        logger.info(r.toString());
-//        RequestResourceList req = new RequestResourceList();
-//        req.setKtreeIds("47");
-//        req.setResourceType(4);
-//        req.setResourceStatus(2);
-//        req.setResourceAccessType(1);
-//        List<CustomResource> r2 = sqlQuery.queryResourceList(req);
-//        logger.info(r2.toString());
     }
 
     @Scheduled(cron = "0 10 0 * * ?")
     public void dailyReset() {
-    }
-
-    public List<Map<String, String>> serverList() {
-
-        List<Map<String, String>> serverList = new ArrayList<>();
-        Map<String, String> server = new HashMap<>();
-        server.put("IP", "172.16.3.113:8000");
-        server.put("appId", "cdh.quickfix_m");
-        serverList.add(server);
-
-        Map<String, String> server2 = new HashMap<>();
-        server2.put("IP", "172.16.3.112:8000");
-        server2.put("appId", "cdh.quickfix_S");
-        serverList.add(server2);
-
-        return serverList;
-    }
-
-    public boolean verifyUser_demo(String username, String password) {
-        List<Pair<String, String>> users = new ArrayList<>();
-        users.add(Pair.of("小鱼说", "12345678"));
-        users.add(Pair.of("小县城", "12345678")); //25d55ad283aa400af464c76d713c07ad
-
-        for (Pair<String, String> pair : users) {
-            if (username.equals(pair.getLeft())
-                    && password.equals(DigestUtils.md5Hex(pair.getRight()))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public int verifyUser(String username, String password) {
@@ -136,7 +100,9 @@ public class DataService {
         userRepo.save(user);
     }
 
+    @Cacheable(cacheNames = "tag_cache", key = "")
     public List<Map<String, Object>> getTags() {
+        logger.info("cache not hit...getTags");
         List<MainTagDict> allTags = tagDictRepo.findAll();
         Map<Byte, List<MainTagDict>> tagsPerResType =
                 allTags.stream().collect(Collectors.groupingBy(MainTagDict::getTagResourceType));
@@ -155,6 +121,7 @@ public class DataService {
         return sqlQuery.queryResourceList(params);
     }
 
+    @Cacheable(cacheNames = "resource_cache", key = "#resourceId")
     public List<CustomResource> queryOneResource(int userId, int resourceId) {
         return sqlQuery.queryResourceListByIds(userId, String.valueOf(resourceId));
     }
@@ -195,8 +162,12 @@ public class DataService {
         resource.setTagsJsonD(JsonUtil.objectToString(tags, ""));
     }
 
+    @CacheEvict(cacheNames = "resource_user_cache", key="#params.resourceId+','+#params.userId")
     @Transactional
     public boolean doUserAction(RequestUserAction params) {
+        Cache cache = cacheManager.getCache("resource_cache");
+        cache.evict(params.getResourceId());
+
         MainResource resource = resourceRepo.findOne(params.getResourceId());
         if (params.isAddNotDelete()) {
             if (params.getActionType() == ActionType.VIEW.getValue()
@@ -332,6 +303,7 @@ public class DataService {
         return false;
     }
 
+    @CacheEvict(cacheNames = "tag_cache", key = "")
     public int doAddTag(RequestAddTag params) {
         MainTagDict existed = tagDictRepo.findByTagNameAndTagResourceType(params.getTagName(), (byte) params.getTagResourceType());
         if (existed != null) {
@@ -344,10 +316,12 @@ public class DataService {
         return 0;
     }
 
+    @CacheEvict(cacheNames = "tag_cache", key = "")
     public void doDeleteTag(int tagId) {
         tagDictRepo.delete((long) tagId);
     }
 
+    @CacheEvict(cacheNames = "resource_content_cache", key="#payload.resourceId")
     @Transactional
     public int addResource(RequestAddResource payload) {
         MainResource resource = null;
@@ -439,19 +413,27 @@ public class DataService {
         return resource.getResourceId();
     }
 
+    @Cacheable(cacheNames = "resource_content_cache", key="#resourceId")
     public List<MainResourceContent> getResourceContent(int resourceId) {
+        logger.info("cache not hit...getResourceContent");
         return resourceContentRepo.findByResourceId(resourceId);
     }
 
+    @CacheEvict(cacheNames = "resource_content_cache", key="#resourceId")
     @Transactional
     public void deleteResource(int resourceId) {
+        Cache cache = cacheManager.getCache("resource_cache");
+        cache.evict(resourceId);
+
         resourceRepo.delete(resourceId);
         resourceContentRepo.deleteByResourceId(resourceId);
         resourceUserRepo.deleteByResourceId(resourceId);
         resourceUserTagRepo.deleteByResourceId(resourceId);
     }
 
+    @Cacheable(cacheNames = "resource_user_cache", key="#resourceId+','+#userId")
     public List<Integer> getResourceUserTags(int resourceId, int userId){
+        logger.info("cache not hit...getResourceUserTags");
         List<MainResourceUserTagR> r = resourceUserTagRepo.findByResourceIdAndUserId(resourceId, userId);
         List<Integer> ids = new ArrayList<>();
         for(MainResourceUserTagR tag: r){
@@ -460,11 +442,13 @@ public class DataService {
         return ids;
     }
 
+    @Cacheable(cacheNames = "user_cache", key="#username")
     public boolean existUser(String username) {
         MainUser user = userRepo.findByUserName(username);
         return (user != null);
     }
 
+    @Cacheable(cacheNames = "user_cache", key="#mobile")
     public boolean existMobile(String mobile) {
         MainUser user = userRepo.findByMobile(mobile);
         return (user != null);

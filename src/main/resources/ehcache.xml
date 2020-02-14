@@ -34,6 +34,14 @@
            overflowToDisk="false"
            diskPersistent="false"/>
 
+    <cache name="resource_content_cache"
+           maxElementsInMemory="10000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="300"
+           overflowToDisk="false"
+           diskPersistent="false"/>
+
     <cache name="resource_cache"
            maxElementsInMemory="10000"
            eternal="false"
@@ -42,7 +50,7 @@
            overflowToDisk="false"
            diskPersistent="false"/>
 
-    <cache name="resource_query_cache"
+    <cache name="resource_user_cache"
            maxElementsInMemory="10000"
            eternal="false"
            timeToIdleSeconds="300"
