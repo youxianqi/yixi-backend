@@ -76,7 +76,7 @@ public class UploadController {
             }
             /* see: https://ak-console.aliyun.com/#/accesskey */
             /* see: https://oss.console.aliyun.com/index */
-            String host = "http://" + config.getOssBucket() + "." + config.getOssEndpoint();
+            String host = "https://" + config.getOssBucket() + "." + config.getOssEndpoint();
             long expirationTick = System.currentTimeMillis() + config.getOssExpirationSeconds() * 1000;
             Date expiration = new Date(expirationTick);
             PolicyConditions policyConditions = new PolicyConditions();
