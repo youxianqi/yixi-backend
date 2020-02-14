@@ -12,7 +12,7 @@ public class CustomResource {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Integer resourceId;
-    private  int ktreeId;
+    private  String ktreeId;
     private  int resourceType;
     private  int resourceStatus;
     private  int resourceAccessType;

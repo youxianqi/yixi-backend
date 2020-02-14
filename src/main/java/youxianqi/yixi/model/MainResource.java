@@ -18,7 +18,7 @@ public class MainResource {
   @Column(name = "\"resource_id\"", nullable = false)
   private Integer resourceId;
   @Column(name = "\"ktree_id\"", nullable = false)
-  private Integer ktreeId;
+  private String ktreeId;
   /**
    * ResourceType,1,course,课程
    * ResourceType,2,exercise,习题

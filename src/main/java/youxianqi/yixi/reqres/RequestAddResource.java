@@ -7,7 +7,7 @@ public class RequestAddResource {
     private Integer resourceId; // is UPDATE when present
     private int userid;
     private int resourceType;
-    private int ktreeId;
+    private String ktreeId;
     private String contentTitle;
     private String contentDesc;
     private int contentMediaType;

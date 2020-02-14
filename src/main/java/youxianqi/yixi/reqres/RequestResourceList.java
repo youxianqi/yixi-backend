@@ -8,7 +8,7 @@ public class RequestResourceList {
     private String ktreeIds;
     private Integer resourceType;
     private Integer resourceStatus;
-    private Integer resourceAccessType;
+    private String resourceAccessTypes;
     private Integer orderByType;
     private Integer orderByDirection;
     private Integer offset;

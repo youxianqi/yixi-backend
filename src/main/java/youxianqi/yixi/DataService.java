@@ -56,6 +56,9 @@ public class DataService {
     ResourceUserTagRepo resourceUserTagRepo;
 
     @Autowired
+    ApplyPublicRepo applyPublicRepo;
+
+    @Autowired
     CacheManager cacheManager;
 
     @Autowired
@@ -170,6 +173,13 @@ public class DataService {
 
         MainResource resource = resourceRepo.findOne(params.getResourceId());
         if (params.isAddNotDelete()) {
+            if (params.getActionType() == ActionType.APPLY_PUBLIC.getValue()){
+                MainApplyPublic applyPublic = new MainApplyPublic();
+                applyPublic.setResourceId(params.getResourceId());
+                applyPublic.setUserId(params.getUserId());
+                applyPublicRepo.save(applyPublic);
+                return true;
+            }
             if (params.getActionType() == ActionType.VIEW.getValue()
                     || params.getActionType() == ActionType.LIKE.getValue()
                     || params.getActionType() == ActionType.FAV.getValue()
@@ -334,7 +344,7 @@ public class DataService {
         resource.setKtreeId(payload.getKtreeId());
         resource.setResourceType((byte) payload.getResourceType());
         resource.setResourceStatus((byte) 2);
-        resource.setResourceAccessType((byte) 1);
+        resource.setResourceAccessType((byte) 2); //1 public, 2 user, 3 paid
         resource.setContentTitle(payload.getContentTitle());
         resource.setContentDesc(payload.getContentDesc());
 
@@ -425,10 +435,16 @@ public class DataService {
         Cache cache = cacheManager.getCache("resource_cache");
         cache.evict(resourceId);
 
-        resourceRepo.delete(resourceId);
-        resourceContentRepo.deleteByResourceId(resourceId);
-        resourceUserRepo.deleteByResourceId(resourceId);
-        resourceUserTagRepo.deleteByResourceId(resourceId);
+//        resourceRepo.delete(resourceId);
+//        resourceContentRepo.deleteByResourceId(resourceId);
+//        resourceUserRepo.deleteByResourceId(resourceId);
+//        resourceUserTagRepo.deleteByResourceId(resourceId);
+        MainResource res = resourceRepo.getOne(resourceId);
+        if (res == null){
+            return;
+        }
+        res.setResourceStatus((byte)3); // 2: valid, 3, deleted
+        resourceRepo.save(res);
     }
 
     @Cacheable(cacheNames = "resource_user_cache", key="#resourceId+','+#userId")

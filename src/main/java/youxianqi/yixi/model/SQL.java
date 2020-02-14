@@ -50,7 +50,7 @@ public class SQL {
                     "    res.ktree_id in (:p_ktree_ids)\n" +
                     "    and res.resource_type = :p_resource_type\n" +
                     "    and res.resource_status = :p_resource_status\n" +
-                    "    and res.resource_access_type = :p_resource_access_type\n";
+                    "    and res.resource_access_type in (:p_resource_access_types)\n";
 
     private static final String WHERE_RESOURCE_ID =
             " where \n" +
@@ -59,17 +59,17 @@ public class SQL {
     public static final String GET_RES_LIST_BY_IDS = RES_USER + WHERE_RESOURCE_ID;
 
     public static final String GET_RES_LIST = RES_USER + WHERE +
-            " order by %s limit %d,%d";
+            " order by %s, res.local_update_time desc limit %d,%d";
 
     public static final String GET_RES_LIST_BY_OWNER = RES_USER + WHERE +
             " and res.owner_user_id = :p_owner_user_id\n" +
-            " order by %s limit %d,%d";
+            " order by %s, res.local_update_time desc limit %d,%d";
 
     public static final String GET_RES_LIST_BY_FAV = RES_USER +
             WHERE +
             " and res_user.user_id = :p_fav_user_id\n" +
             " and res_user.has_faved = 1\n" +
-            " order by %s limit %d,%d";
+            " order by %s, res.local_update_time desc limit %d,%d";
 
     public static final String GET_RES_LIST_BY_TAGS = RES_USER +
             " inner join\n" +
@@ -80,7 +80,7 @@ public class SQL {
             " tags\n" +
             " on tags.resource_id = res.resource_id\n" +
             WHERE +
-            " order by %s limit %d,%d";
+            " order by %s, res.local_update_time desc limit %d,%d";
 
     @Autowired
     EntityManager em;
@@ -106,8 +106,12 @@ public class SQL {
             offset = params.getOffset();
         }
         String sqlTemplate = GET_RES_LIST;
-        List<String> lst = Arrays.asList(params.getKtreeIds().split(","));
-        List<Integer> ktreeIds = lst.stream().map(x -> Integer.valueOf(x)).collect(Collectors.toList());
+
+        List<String> ktreeIds = Arrays.asList(params.getKtreeIds().split(","))
+                .stream().collect(Collectors.toList());
+
+        List<Integer> accessTypes = Arrays.asList(params.getResourceAccessTypes().split(","))
+                .stream().map(x -> Integer.valueOf(x)).collect(Collectors.toList());
 
         if (params.getOwnerUserId() != null) {
             sqlTemplate = GET_RES_LIST_BY_OWNER;
@@ -118,7 +122,7 @@ public class SQL {
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
-                    .setParameter("p_resource_access_type", params.getResourceAccessType())
+                    .setParameter("p_resource_access_types", accessTypes)
                     .setParameter("p_owner_user_id", params.getOwnerUserId())
                     .getResultList();
         }
@@ -131,7 +135,7 @@ public class SQL {
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
-                    .setParameter("p_resource_access_type", params.getResourceAccessType())
+                    .setParameter("p_resource_access_types", accessTypes)
                     .setParameter("p_fav_user_id", params.getFavUserId())
                     .getResultList();
         }
@@ -144,7 +148,7 @@ public class SQL {
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
-                    .setParameter("p_resource_access_type", params.getResourceAccessType())
+                    .setParameter("p_resource_access_types", accessTypes)
                     .setParameter("p_tag_ids", params.getTagIds())
                     .getResultList();
         }
@@ -157,7 +161,7 @@ public class SQL {
                     .setParameter("p_ktree_ids", ktreeIds)
                     .setParameter("p_resource_type", params.getResourceType())
                     .setParameter("p_resource_status", params.getResourceStatus())
-                    .setParameter("p_resource_access_type", params.getResourceAccessType())
+                    .setParameter("p_resource_access_types", accessTypes)
                     .getResultList();
         }
     }
